@@ -168,21 +168,17 @@ const updateUser = async (Id, userBody) => {
             paymentMethod: userBody.cardDetails,
             paymentStatus: 1,
             planDeatils: userBody.planDeatils,
-            subscriptionEndDate:userBody.subscriptionEndDate,
-            subscriptionStartDate:userBody.subscriptionStartDate,
-            subscriptionStatus:userBody.subscriptionStatus
           };
           const upgradeId = userBody.upgradeId;
+
           const updateUpgradePlan = await upgradeCollection.findByIdAndUpdate(
             upgradeId,
             obj2
           );
 
           if (updateUpgradePlan) {
-
             const updatedUser = await userCollection.findByIdAndUpdate(Id, obj2);
-            const updatefind  = await userCollection.findOne({_id:Id})
-            return updatefind;
+            return updatedUser;
           }
         } else if (subscription) {
           const obj = {
@@ -197,8 +193,7 @@ const updateUser = async (Id, userBody) => {
             subscriptionEndDate: userBody.subscriptionEndDate,
           };
           const updatedUser = await userCollection.findByIdAndUpdate(Id, obj);
-          const updatefind  = await userCollection.findOne({_id:Id})
-          return updatefind;
+          return updatedUser;
         } else {
           throw new ApiError(500, "Payment subscription failed");
         }
@@ -262,8 +257,7 @@ const updateUser = async (Id, userBody) => {
                 Id,
                 obj2
               );
-              const updatefind  = await userCollection.findOne({_id:Id})
-              return updatefind;
+              return updatedUser;
             }
           } else if (subscription) {
             const obj = {
@@ -279,8 +273,7 @@ const updateUser = async (Id, userBody) => {
               subscriptionEndDate: userBody.subscriptionEndDate,
             };
             const updatedUser = await userCollection.findByIdAndUpdate(Id, obj);
-            const updatefind  = await userCollection.findOne({_id:Id})
-            return updatefind;
+            return updatedUser;
           } else {
             throw new ApiError(500, "Payment subscription failed");
           }

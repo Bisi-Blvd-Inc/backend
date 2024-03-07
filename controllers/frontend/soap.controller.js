@@ -5,7 +5,6 @@ const addSoap = async (req, res) => {
     const { level, subjective, objective, assessment, plan, additionalNotes } =
       req.body;
     const images = req.files;
-    const Id = req._user;
     const imageArray = [];
     if (images && images.length > 0) {
       images.forEach((element) => {
@@ -25,7 +24,6 @@ const addSoap = async (req, res) => {
       plan: plan,
       additionalNotes: additionalNotes,
       files: imageArray,
-      addedBy :  Id
     };
 
     const soapResult = await userSoapservices.post(obj);

@@ -12,22 +12,6 @@ var nodeCron = require("node-cron");
 const serviceSettingCollection = require("../../models/serviceSetting");
 const { planAlertMail, sendPaymentMail } = require("../../helpers/users");
 const { pick } = require("lodash");
-const notificatinCollection = require("../../models/notification")
-const businessServiceCollection = require("../../models/businessService")
-const customerCollectionModel = require("../../models/customer")
-const bookingCollection = require("../../models/booking");
-const scheduleCollection = require("../../models/schedule");
-const customersLinkCollection = require("../../models/customizedLink");
-const personalBudgetCollection = require("../../models/personalBudget");
-// const serviceSettingCollection = require ("../../models/serviceSetting");
-// const upgradeCollection =  require("../../models/upgrade");
-const goalsCollection =  require("../../models/goalsCompanyBudget");
-const inventoryCollection =  require("../../models/inventory");
-// const paymentCollection = require("../../models/paymentHistory");
-const userDetailFileuploadCollection = require("../../models/userDetailfileupload");
-const userdetailNotes = require("../../models/userdetailnotes");
-const userDetailSoap = require("../../models/userdetailsoap");
-
 const userCollection = require("../../models/user");
 const upgradeCollection = require("../../models/upgrade");
 const Cryptr = require("cryptr");
@@ -69,78 +53,6 @@ const createUser = async (req, res) => {
       .json({ status: 401, success: false, message: error.message });
   }
 };
-
-const restoreHistory = async (req, res) => {
-  try {
-    const { id } = req.body;
-    const user1 = await usersService.update(id , {HistoryActivateStatus : true});
-    if (user1)
-      return res.status(200).json({
-        status:200 ,
-        success: true,
-        message: "Restore all data !",
-      });
-  } catch (error) {
-    return res
-      .status(200)
-      .json({ status: 401, success: false, message: error.message });
-  }
-};
-
-
-
-const deleteHistory = async (req, res) => {
-  try {
-    const { id } = req.body;
-    const notificationResult = await notificatinCollection.deleteMany({ bookedBy: id });
-    const businessServiceResult = await businessServiceCollection.deleteMany({ addedBy: id });
-    const customerResult = await customerCollectionModel.deleteMany({ userId: id });
-    const bookingResult = await bookingCollection.deleteMany({ userId: id });
-    const scheduleResult = await scheduleCollection.deleteMany({ addedBy: id });
-    const customersLinkResult = await customersLinkCollection.deleteMany({ userId: id });
-    const personalBudgetResult = await personalBudgetCollection.deleteMany({ addedBy: id });
-    const serviceSettingResult = await serviceSettingCollection.deleteMany({ addedBy: id });
-    const upgradeResult = await upgradeCollection.deleteMany({ userId: id });
-    const goalsResult = await goalsCollection.deleteMany({ addedBy: id });
-    const inventoryResult = await inventoryCollection.deleteMany({ userId: id });
-    const paymentResult = await paymentCollection.deleteMany({ userId: id });
-    const userDetailFileuploadResult = await userDetailFileuploadCollection.deleteMany({ addedByowner: id });
-    const userdetailNotesResult = await userdetailNotes.deleteMany({ addedBy: id });
-    const userDetailSoapResult = await userDetailSoap.deleteMany({ addedBy: id });
-
-    // Check if any of the operations failed
-    if (
-      notificationResult.ok &&
-      businessServiceResult.ok &&
-      customerResult.ok &&
-      bookingResult.ok &&
-      scheduleResult.ok &&
-      customersLinkResult.ok &&
-      personalBudgetResult.ok &&
-      serviceSettingResult.ok &&
-      upgradeResult.ok &&
-      goalsResult.ok &&
-      inventoryResult.ok &&
-      paymentResult.ok &&
-      userDetailFileuploadResult.ok &&
-      userdetailNotesResult.ok &&
-      userDetailSoapResult.ok
-    ) {
-      return res.status(200).json({
-        status: 200,
-        success: true,
-        message: "History deleted successfully",
-      });
-    } else {
-      // If any of the operations failed, return an error response
-      throw new Error("One or more delete operations failed");
-    }
-  } catch (error) {
-    return res.status(500).json({ status: 500, success: false, message: error.message });
-  }
-};
-
-
 
 const getUser = async (req, res) => {
   try {
@@ -636,13 +548,6 @@ const createExternalBooking = async (req, res) => {
 
 
     const salonOwner = await userCollection.findById(userId);
-    if(salonOwner.isActivateAccount == true){
-      return res.status(400).json({
-        success: true,
-        message: "Link is Expired",
-        status: 400,
-      });
-    } 
     const bookingPaymentStatus = paymentType === "Offline" ? "UnPaid" : "Paid";
 
     const ownerEmail = salonOwner?.email;
@@ -1574,7 +1479,10 @@ const ExternalBookingPayment = async (req, res) => {
         currency: "usd",
       });
       const paymentConfirm = await stripeInstance.paymentIntents.confirm(
-        paymentIntent.id
+        paymentIntent.id,
+        {
+          return_url: process.env.FRONT_BASE_URL
+        }
       );
 
       const intent = await stripeInstance.paymentIntents.retrieve(
@@ -2076,7 +1984,5 @@ module.exports = {
   addCard,
   getFilterPaymentHistory,
   getSearchPaymentHistory,
-  getCountryCode,
-  restoreHistory,
-  deleteHistory
+  getCountryCode
 };

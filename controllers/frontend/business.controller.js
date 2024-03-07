@@ -127,12 +127,10 @@ const getAllFrontendbussTypes = async (req, res) => {
 const getAdminService = async (req, res) => {
   try {
     const result = await businessService.getAdminService();
-    console.log(result,"result")
-
     const userData = await userCollection.findOne({ _id: req._user })
       .populate('businessType')
       .exec();
-    const businessTypes = userData?.businessType?.map(item => item?.businessType);
+    const businessTypes = userData.businessType.map(item => item.businessType);
     const firstBusinessType = businessTypes[0];
     const salonData = result.filter((item) => {
       const businessTypes = item.businessTypeId.map(
@@ -140,7 +138,6 @@ const getAdminService = async (req, res) => {
       );
       return businessTypes.includes(firstBusinessType);
     });
-    console.log(salonData,"userDatauserData")
 
     if (!result) {
       return res.status(200).json({
