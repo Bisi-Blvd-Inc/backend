@@ -22,7 +22,7 @@ const signin = async (req, res) => {
         return res.status(206).json({ message: "Error in generating token" });
       }
       res.status(200).json({
-        message: "Logged In",
+        message: "Loggsssssssed In",
         data: { user: user, token: token },
       });
     } else {
