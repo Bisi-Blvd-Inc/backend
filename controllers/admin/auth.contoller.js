@@ -215,7 +215,7 @@ const editProfile = async (req, res) => {
 
     if (result) {
       return res.status(200).json({
-        message: "User cvzxvxcv successfully",
+        message: "Use successfully",
       });
     } else {
       return res.status(400).json({
