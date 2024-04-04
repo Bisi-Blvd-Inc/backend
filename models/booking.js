@@ -32,10 +32,9 @@ var BookingSchema = new Schema(
     },
     bookingStatus: {
       type: String,
-      enum: ["Confirmed", "Cancelled"],
+      enum: ["Confirmed","Completed" ,"Cancelled"],
       default: "Confirmed",
     },
-
     userId: { type: Schema.Types.ObjectId, ref: "User" },
     bookedBy: { type: Schema.Types.ObjectId, ref: "User" },
     startDate: { type: Date },

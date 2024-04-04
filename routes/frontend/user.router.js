@@ -7,6 +7,10 @@ router.post("/search", userController.externalBookingSearch);
 router.get("/customerWithName", userController.getCustomerWithName);
 router.post("/retrieveInvoice", userController.retrieveInvoice);
 router.post("/create", authMiddleware, userController.createUser);
+router.post("/restoreHistory", authMiddleware, userController.restoreHistory);
+router.post("/Deletedhistory", authMiddleware, userController.deleteHistory);
+
+
 router.post("/createBooking",  userController.createExternalBooking);
 router.post("/bookingPayment",  userController.ExternalBookingPayment);
 router.get("/get/:pageNo/:limit", authMiddleware, userController.getUser);

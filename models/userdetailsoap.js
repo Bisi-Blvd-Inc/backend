@@ -11,6 +11,8 @@ var userdetailsoapSchema = new Schema(
     plan: { type: String },
     additionalNotes: { type: String },
     files: { type: Object },
+    addedBy: { type: Schema.Types.ObjectId},
+
   },
   { collection: "userdetailsoap", timestamps: { createdAt: true, updatedAt: true } }
 );

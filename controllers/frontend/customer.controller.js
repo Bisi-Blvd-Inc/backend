@@ -1,11 +1,13 @@
 const businessSchema = require("../../models/businessService");
 const customerCollection = require("../../models/customer");
+const userCollection  =  require("../../models/user");
 const notificationCollection = require("../../models/notification")
 const customerService = require("../../services/customer.service");
 const calenderSettingService = require("../../services/schedule.service");
 const Cryptr = require("cryptr");
 const cryptr = new Cryptr("secretKey");
 const bookingService = require("../../services/booking.service");
+const { returnAccountActivationMail } = require("../../helpers/users");
 
 const createCustomer = async (req, res) => {
   try {
@@ -107,6 +109,77 @@ const createCustomer = async (req, res) => {
         data: bookingCustomer,
       });
     }
+  } catch (error) {
+    const code = 500;
+    return res.status(code).json({ code, message: error.message });
+  }
+};
+const resendmail = async (req, res) => {
+  try {
+   
+    
+    const email = req?.body?.emaii;
+    const checkstatus =  await userCollection.findOne({email : req?.body?.emaii})
+    if (checkstatus.status == 0) {
+      returnAccountActivationMail(email)
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Activation email has been sent. Please check your email",
+      });
+    }
+    else {
+      // returnAccountActivationMail(email)
+      return res.status(200).json({
+        status: 201,
+        success: true,
+        message: "Account is be already activated",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+const createclient = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      phoneNumber,
+      userId,
+      selectedCountry,
+      role
+    } = req.body;
+    const customerData = {
+      name,
+      email: email?.toLowerCase(),
+      phoneNumber,
+      userId,
+      selectedCountry,
+      role
+    };
+    const customerId = await customerCollection.findOne({
+      email: { $regex: new RegExp(email, "i") },
+      userId: userId,
+    })
+    if(customerId){
+      return res.status(201).json({
+        status: 200,
+        data: customerId,
+        message: "Client already created",
+      });
+    }
+    else{
+      const createdCustomer = await customerService.post(customerData);
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Client created",
+        data: createdCustomer,
+      });
+    }
+
+    
   } catch (error) {
     const code = 500;
     return res.status(code).json({ code, message: error.message });
@@ -348,4 +421,6 @@ module.exports = {
   userDelete,
   userSearch,
   editBookingUser,
+  createclient,
+  resendmail
 };

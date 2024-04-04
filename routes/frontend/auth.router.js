@@ -33,6 +33,8 @@ router.post("/autoSignin", authController.autoSignIn);
 router.post("/forgot", authController.forgotPassword);
 router.post("/resetPassword", authController.resetPassword);
 router.put("/activate/:token", authController.onActivateAccount);
+router.post("/accountDeactivate/:id", authController.accountDeactivation);
+router.post("/accountActivateByClient/:id", authController.accountActivateByClient);
 router.post("/changePassword", authMiddleware, authController.changePassword);
 router.put(
   "/profileUpdate/:id",

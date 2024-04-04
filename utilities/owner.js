@@ -15,7 +15,6 @@ module.exports.sendOwnerMailer = (data) => {
   (async () => {
     try {
       await sgMail.send(msg);
-      console.log("Message sent to the owner ");
     } catch (error) {
       console.error(error);
       if (error.response) {

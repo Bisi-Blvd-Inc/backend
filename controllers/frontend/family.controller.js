@@ -10,13 +10,15 @@ const checkRelation = (userrelation, relation) => {
 }
 const create = async (req, res) => {
   try {
-    const { users, relation, addedByUser } = req.body;
+    const { users, relation, addedByuser } = req.body;
+
+
     const existingRelation = await familyModal.findOne({
-      addedByUser: addedByUser,
+      addedByUser: addedByuser,
       users: users
     });
     const userRelations = await familyModal.find({
-      addedByUser: addedByUser
+      addedByUser: addedByuser
     });
 
     const userId = req._user;
@@ -25,7 +27,8 @@ const create = async (req, res) => {
         users: users,
         relation: relation,
         addedByowner: userId,
-        addedByuser: addedByUser
+        addedByuser: addedByuser,
+
       };
 
       if (checkRelation(userRelations, relation))
@@ -35,6 +38,8 @@ const create = async (req, res) => {
         });
 
       const createdRelation = await familyService.post(newRelation);
+      console.log(createdRelation,":L:L:L:LcreatedRelation:L:L:L:L")
+
       return res.status(200).json({
         success: true,
         message: "Relation added successfully",
