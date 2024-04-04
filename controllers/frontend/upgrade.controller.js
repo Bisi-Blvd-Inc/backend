@@ -23,17 +23,16 @@ const createPlan = async (req, res) => {
       subscriptionEndDate,
       userId,
     };
-    const user1 = await userCollection.findById(userId);
-
     const createPlanUpgrade = await upgradeService.post(upgrade_obj);
     if (createPlanUpgrade) {
-    
+      const user1 = await userCollection.findById(userId);
+    }
+
     return res.status(200).json({
       success: true,
-      message: user1.paymentStatus == 0  ?  "Plan purchase is successfully completed "  : "Plan successfully upgraded",
+      message: "Plan successfully upgraded",
       data: createPlanUpgrade,
     });
-  }
   } catch (error) {
     return res.status(500).json({
       message: error.message,

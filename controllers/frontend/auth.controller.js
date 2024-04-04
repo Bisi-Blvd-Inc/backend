@@ -1,23 +1,17 @@
 const authService = require("../../services/auth.services");
 const businessService = require("../../services/business.service");
-const bookingService = require("../../services/booking.service")
 const _ = require("lodash");
 const { pick } = require("lodash");
 const { createAdminNotification } = require("./notification.controller");
 const { generateToken, comparePassword, verifyJWT } = require("../../helpers/helper");
 const bcrypt = require("bcrypt");
 const { sendForgotPasswordMailForFrontend } = require("../../helpers/helper");
-const { sendActivationMail, returnAccountActivationMail, sendReturnuser, activateAccount, sendWrongPasswordMail, accountactivationMailToOwner, accountDeactivationMailToOwner, sendNewuserCreated, accountDeactivationMail, accountactivationMail } = require("../../helpers/users");
+const { sendActivationMail, activateAccount, sendWrongPasswordMail , sendNewuserCreated } = require("../../helpers/users");
 
 const signin = async (req, res) => {
   try {
     const { email, password, fcmToken } = req.body;
-    const user = await authService.findOne({ email });
-    const resultsArray = await Promise.all(
-      user.businessType.map(async (businessTypeId) => {
-        return await businessService.findOne({ _id: businessTypeId });
-      })
-    );
+    const user = await authService.findOne({ email});
     if (user) {
       const validPassword = await comparePassword(password, user.password);
 
@@ -60,11 +54,7 @@ const signin = async (req, res) => {
         fcmToken: array,
       };
 
-      let updatedUser = await authService.update(userId, { fcmToken: array, isActivateAccount : false});
-      if (user?.status == 0 && user?.HistoryActivateStatus == false) {
-        returnAccountActivationMail(user?.email);
-        sendReturnuser(user?.firstName, resultsArray)
-      }
+      let updatedUser = await authService.update(userId, obj);
 
       res.status(200).json({
         message: "Logged In",
@@ -102,21 +92,12 @@ const signup = async (req, res) => {
         return await businessService.findOne({ _id: businessTypeId });
       })
     );
+
     // Now, resultsArray contains the results for each business type
-    if (user?.HistoryActivateStatus == true && user?.status == 1 || user?.status == 1) {
+    if (user) {
       return res.status(400).json({
         message: "Email Already Exists",
       });
-    }
-    else if (user?.HistoryActivateStatus == false && user?.status == 0) {
-      returnAccountActivationMail(email);
-      sendReturnuser(req?.body?.firstName, resultsArray)
-      return res.status(201).json({
-        success: true,
-        message: "You having already having an account, Please verify email!",
-        data: user,
-      });
-
     }
     if (password) {
       bcrypt.hash(password?.toString(), 10, async (err, hash) => {
@@ -130,12 +111,12 @@ const signup = async (req, res) => {
             ...req.body,
             password: hash,
           };
-
+          
 
           const createdUser = await authService.post(newUser);
-
+         
           sendActivationMail(email);
-          sendNewuserCreated(req?.body?.firstName, resultsArray);
+          sendNewuserCreated(req?.body?.firstName,resultsArray);
           let notification = {
             title: "Your Business is Growing",
             text: `A new subscriber was added to your salon. Please ensure <strong>${createdUser.firstName}</strong> has accurate login credentials.`,
@@ -472,60 +453,6 @@ const autoSignIn = async (req, res) => {
     });
   }
 };
-const accountDeactivation = async (req, res) => {
-  const { firstname, email } = req.body
-  const { id } = req.params
-  try {
-    const checkBookingStatus = await bookingService.findBycutomerID({ userId: id, bookingStatus: "Confirmed" })
-    if (checkBookingStatus.length > 0) {
-      return res.status(200).json({
-        status: 201,
-        success: true,
-        message: "You can not Deactivate Account because you having pending Bookings",
-      });
-    }
-    const deactivationDate = new Date();
-    const userDeactivate = await authService.update(id, {
-      isActivateAccount: true,
-      DeactivateAccountDate: deactivationDate,
-    });
-    const user = await accountDeactivationMail(firstname, email);
-    //  const sendOwnerMail = await  accountDeactivationMailToOwner(firstname,email)
-    return res.status(200).json({
-      status: 200,
-      success: true,
-      data: user,
-
-      message: "Account Deactivated successfully",
-    });
-  } catch (error) {
-    console.error("Error deactivating user account:", error);
-  }
-}
-
-
-const accountActivateByClient = async (req, res) => {
-  const { firstname, email } = req.body
-  const { id } = req.params
-  try {
-    const deactivationDate = new Date();
-    const userDeactivate = await authService.update(id, {
-      isActivateAccount: false,
-      DeactivateAccountDate: ""
-    });
-    const user = await accountactivationMail(firstname, email);
-    //  const sendOwnerMail = await  accountactivationMailToOwner(firstname,email)
-    return res.status(200).json({
-      status: 200,
-      success: true,
-      data: userDeactivate,
-
-      message: "Account activated successfully",
-    });
-  } catch (error) {
-    console.error("Error deactivating user account:", error);
-  }
-}
 
 module.exports = {
   signin,
@@ -538,6 +465,4 @@ module.exports = {
   getUserByEmail,
   onActivateAccount,
   autoSignIn,
-  accountDeactivation,
-  accountActivateByClient
 };

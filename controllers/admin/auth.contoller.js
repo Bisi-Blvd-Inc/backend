@@ -46,7 +46,7 @@ const signinadmin = async (req, res) => {
         return res.status(206).json({ message: "Error in generating token" });
       }
       res.status(200).json({
-        message: "Logged In",
+        message: "sdgdtyh In",
         data: { user: user, token: token },
       });
     } else {

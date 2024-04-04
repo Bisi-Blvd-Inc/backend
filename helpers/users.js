@@ -75,29 +75,6 @@ const sendActivationMail = async (email) => {
   }
 };
 
-
-
-const returnAccountActivationMail = async (email) => {
-  try {
-    const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
-      expiresIn: "5m",
-    });
-    const emailData = {
-      email,
-      subject: `Account Invitation`,
-      body: `<h1>Welcome Back . Please use the following link to activate your account</h1>
-      <p> <a href="${process.env.FRONT_lOGIN}/account/activate/${token}" target = "_blank">Activate Account</a> </p>
-          <hr />
-          <p>This email may contain sensetive information</p>
-          <p></p>
-      `,
-    };
-    return mail.sendUserMailerHtml(emailData);
-  } catch (error) {
-    throw error;
-  }
-};
-
 const sendstaffMail = async (email,
   name,
   staffId) => {
@@ -123,7 +100,7 @@ const sendNewuserCreated = async (firstName,resultsArray) => {
 
   try {
     const emailData = {
-      email: "gautammalik.eminence@gmail.com",
+      email: "admin@bisiblvd.com",
       subject: `New Subscriber added`,
       html: `
           <p>Dear Noelle <p>
@@ -140,104 +117,6 @@ const sendNewuserCreated = async (firstName,resultsArray) => {
   }
 };
 
-const sendReturnuser = async (firstName,resultsArray) => {
-
-  try {
-    const emailData = {
-      email: "gautammalik.eminence@gmail.com",
-      subject: `User will be back`,
-      html: `
-          <p>Dear Noelle <p>
-          <p> 
-          User will be back <b style="color:green;">  ${firstName} </b> and recently joined our community under <b style="color:green;"> ${resultsArray.map(data => data.businessType).join(', ')} </b>. Click here ${AdminUrl}/users to check more.</p>
-          <hr />
-          <p>This email may contain sensitive information</p>
-          <p></p>
-      `
-    };
-    return owner.sendOwnerMailer(emailData);
-  } catch (error) {
-    throw error;
-  }
-};
-
-const accountDeactivationMail = async (firstname,email) => {
-  
-  try {
-    const emailData = {
-      email: email,
-      subject: `Your account deactivated`,
-      html: `
-          <p>Dear  ${firstname}<p>
-          <p> 
-          Dear <b style="color:green;"> ${firstname} </b> Your account is deactivated.</p>
-          <hr />
-          <p></p>
-      `
-    };
-    return owner.sendOwnerMailer(emailData);
-  } catch (error) {
-    throw error;
-  }
-};
-
-const accountactivationMailToOwner = async (firstname,email) => {
-  
-  try {
-    const emailData = {
-      email: "admin@bisiblvd.com",
-      subject: `Activation Customer Account`,
-      html: `
-          <p>Dear  Noelle<p>
-          <p> 
-        <b style="color:green;">    ${email}  Acoount was Activated by ${firstname}.</p>
-          <hr />
-          <p></p>
-      `
-    };
-    return owner.sendOwnerMailer(emailData);
-  } catch (error) {
-    throw error;
-  }
-};
-const accountactivationMail = async (firstname,email) => {
-  
-  try {
-    const emailData = {
-      email: email,
-      subject: `Your account activated`,
-      html: `
-          <p>Dear  ${firstname}<p>
-          <p> 
-          Dear <b style="color:green;"> ${firstname} </b> Your account is activated.</p>
-          <hr />
-          <p></p>
-      `
-    };
-    return owner.sendOwnerMailer(emailData);
-  } catch (error) {
-    throw error;
-  }
-};
-const accountDeactivationMailToOwner = async (firstname,email) => {
-  
-  try {
-    const emailData = {
-      email: "admin@bisiblvd.com",
-      subject: `Deactivation Customer Account`,
-      html: `
-          <p>Dear  Noelle<p>
-          <p> 
-        <b style="color:green;">    ${email}  Acoount was deactivated by ${firstname}.</p>
-          <hr />
-          <p></p>
-      `
-    };
-    return owner.sendOwnerMailer(emailData);
-  } catch (error) {
-    throw error;
-  }
-};
 
 
 
@@ -650,11 +529,5 @@ module.exports = {
   cancelBookingMail,
   changeScheduleMail,
   sendBookingMailExternal,
-  sendstaffMail,
-  accountDeactivationMail,
-  accountactivationMail,
-  accountactivationMailToOwner,
-  accountDeactivationMailToOwner,
-  returnAccountActivationMail,
-  sendReturnuser
+  sendstaffMail
 };
