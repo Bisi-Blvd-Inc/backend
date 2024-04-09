@@ -6,7 +6,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 In the project directory, you can run:
 
-## Before you can run the project, make sure you have the following installed on your machine:
+## Before you run the project, make sure you have the following installed on your machine:
 
 node=14.19.0
 
