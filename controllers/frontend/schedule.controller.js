@@ -57,7 +57,6 @@ const createSchedule = async (req, res) => {
       data.push(obj);
     });
     const user1 = await User.findById(req._user);
-
     if (!user1)
       return res.status(401).json({
         success: false,
