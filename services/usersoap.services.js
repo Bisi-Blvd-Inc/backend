@@ -6,9 +6,13 @@ const getAll=()=>usersoap.find()
 const update = (condition, payload) => {
   return usersoap.findByIdAndUpdate(condition, payload);
 };
+const deleteById = (condition) => {
+  return usersoap.findByIdAndDelete(condition);
+};
 module.exports = {
   post,
   getSoapwithId,
   update,
-  getAll
+  getAll,
+  deleteById
 };

@@ -93,6 +93,31 @@ const searchSoaps = async (req, res) => {
 };
 
 
+const deleteSoapById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const response = await userSoapservices.deleteById({ _id: id });
+    if (response) {
+      return res.status(200).json({
+        success: true,
+        message: "Deleted Successfully",
+        data: response,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "No Product Found",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
+
 
 const addallSoap=async(req,res)=>{
 try {
@@ -256,5 +281,6 @@ module.exports = {
   getAll,
   addallSoap,
   searchSoaps,
-  searchSoapByDateAndName
+  searchSoapByDateAndName,
+  deleteSoapById
 };
