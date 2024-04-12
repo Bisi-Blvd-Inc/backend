@@ -1,4 +1,5 @@
 const userSoapservices = require("../../services/usersoap.services");
+const usersoap = require('../../models/userdetailsoap')
 
 const addSoap = async (req, res) => {
   try {
@@ -69,6 +70,131 @@ const getSoap = async (req, res) => {
   }
 };
 
+
+
+const getAll = async (req, res) => {
+  try {
+    const soaps = await usersoap.find();
+    console.log("Soap : "+soaps);
+    res.status(200).json({ msg:soaps });
+  } catch (error) {
+    res.status(500).json({ msg: error });
+  }
+}
+const searchSoaps = async (req, res) => {
+  try {
+    const { subjective, date } = req.params;
+    const soaps = await usersoap.find({ subjective: new RegExp(subjective, 'i'), createdAt: { $gte: date } });
+    res.status(200).json({ msg: soaps });
+  } catch (error) {
+    console.error("Error searching soaps:", error);
+    res.status(500).json({ msg: error });
+  }
+};
+
+
+
+const addallSoap=async(req,res)=>{
+try {
+  
+} catch (error) {
+  console.log(error)
+  res.status(500).json({msg:error})
+}
+}
+
+
+
+const searchSoapByDateAndName = async (req, res) => {
+  try {
+    let { date, text, id } = req.query;
+    let trimmedText = text.trim();
+    const regex = new RegExp(trimmedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    const query = {};
+    if (date) {
+      query['createdAt'] = date;
+    }
+    if (text) {
+      query['inventory.name'] = regex;
+    }
+    if (id) {
+      query['userId'] = mongoose.Types.ObjectId(id);
+    }
+
+    const response = await usersoap.aggregate([
+      {
+        '$project': {
+          'createdAt': {
+            '$dateToString': {
+              'format': '%Y-%m-%d',
+              'date': '$createdAt'
+            }
+          },
+          'inventoryId': 1,
+          'quantity': 1,
+          'price': 1,
+          'userId': 1
+        }
+      },
+      {
+        '$lookup': {
+          'from': 'inventories',
+          'localField': 'inventoryId',
+          'foreignField': '_id',
+          'as': 'inventory'
+        }
+      },
+      {
+        '$unwind': '$inventory'
+      },
+      {
+        $match: query,
+      },
+      {
+        '$project': {
+          'createdAt': 1,
+          'inventoryId': 1,
+          'quantity': 1,
+          'price': 1,
+          'inventory.isDeleted': 1,
+          'inventory.userId': 1,
+          'inventory.name': 1,
+          'inventory.productstock': 1,
+          'inventory.price': 1,
+          'inventory.createdAt': 1,
+          'inventory.updatedAt': 1,
+          'inventory.__v': 1
+        }
+      }
+    ]);
+
+    if (response) {
+      return res.status(200).json({
+        success: true,
+        data: response,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'No Data Found',
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      data: error,
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
+
+
+
+
+
+
 const updateSoap = async (req, res) => {
   try {
     const {
@@ -127,4 +253,8 @@ module.exports = {
   addSoap,
   getSoap,
   updateSoap,
+  getAll,
+  addallSoap,
+  searchSoaps,
+  searchSoapByDateAndName
 };
