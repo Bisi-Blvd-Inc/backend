@@ -48,7 +48,7 @@ const getSoap = async (req, res) => {
   try {
     let { id } = req.params;
     const response = await userSoapservices.getSoapwithId({
-      userBookingId: id,
+      _id : id,
     });
     if (!response) {
       return res.status(200).json({
@@ -83,8 +83,12 @@ const getAll = async (req, res) => {
 }
 const searchSoaps = async (req, res) => {
   try {
-    const { subjective, date } = req.params;
-    const soaps = await usersoap.find({ subjective: new RegExp(subjective, 'i'), createdAt: { $gte: date } });
+    // const { subjective, date } = req.params;
+    const { subjective } = req.params;
+
+    // const soaps = await usersoap.find({ subjective: new RegExp(subjective, 'i'), createdAt: { $gte: date } });
+    const soaps = await usersoap.find({ subjective: new RegExp(subjective, 'i') });
+    
     res.status(200).json({ msg: soaps });
   } catch (error) {
     console.error("Error searching soaps:", error);
