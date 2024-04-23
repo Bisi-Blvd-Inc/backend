@@ -8,7 +8,7 @@ const findOne = (condition) => userfile.findOne(condition);
 
 const post = (payload) => userfile.create(payload);
 
-const getFileswithId =  (condition) => userfile.findOne(condition)
+const getFileswithId =  (condition) => userfile.find(condition)
 
 
 module.exports = {

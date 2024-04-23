@@ -3,9 +3,9 @@ var Schema = mongoose.Schema;
 
 var userDetailfileuploadsoapSchema = new Schema(
   {
-    appointmentFiles: { type: Array , default:null },
-    customerFiles: { type: Array, default:null},
-    formsFiles: { type: Array, default:null},
+    filesType: { type: String , default:null },
+    fileName: { type: String, default:null},
+    file: { type: String, default:null},
     addedByuser: { type: Schema.Types.ObjectId},
     addedByowner: { type: Schema.Types.ObjectId},
   },
