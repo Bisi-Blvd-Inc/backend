@@ -1870,7 +1870,13 @@ const getFilterPaymentHistory = async (req, res) => {
     if (text !== 'undefined') {
       const regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       pipeline.push({
-        $match: { name: regex },
+        $match:  { 
+          $or: [
+            { name: regex }, 
+            { email: regex } ,
+            { invoiceNumber: regex } ,
+          ]
+        },
       });
     }
 
