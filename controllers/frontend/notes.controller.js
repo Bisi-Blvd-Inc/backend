@@ -27,7 +27,6 @@ const getAll = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await notesService.getAll({addedByuser : id});
- 
     if (!response) {
       return res.status(200).json({
         message: "Data not found",

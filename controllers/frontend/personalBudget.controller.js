@@ -159,11 +159,29 @@ const getPersonalBudget = async (req, res) => {
     });
   }
 };
-
+const getPersonal =  async (req, res) => {
+  try {
+    let addedBy = req._user;
+    const personalBudget = await PersonalBudgetModal.findOne({
+      addedBy: addedBy,
+    });
+    return res.status(200).json({
+      success: true,
+      personalBudget,
+      message: "Personal Budget success",
+    });
+  } catch (error) {
+    return res.status(200).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
 //
 module.exports = {
   personal_budget,
   editPersonalBudget,
   savePersonalBudget,
   getPersonalBudget,
+  getPersonal
 };
