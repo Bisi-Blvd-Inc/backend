@@ -30,8 +30,8 @@ const createBusinessService = async (req, res) => {
       });
 
     if (obj.service) {
-      return res.status(401).json({
-        status: 401,
+      return res.status(201).json({
+        status: 201,
         success: false,
         message: "Service already exists",
       });
@@ -214,8 +214,8 @@ const editBusinessService = async (req, res, next) => {
       });
     if (obj?.service) {
 
-      return res.status(401).json({
-        status: 401,
+      return res.status(201).json({
+        status: 201,
         success: false,
         message: "Service already exists",
       });

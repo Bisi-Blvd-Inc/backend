@@ -12,7 +12,7 @@ const createBusinessType = async (req, res) => {
     });
 
     if (exist) {
-      return res.status(400).json({
+      return res.status(201).json({
         message: "Business type already exists",
       });
     } else {
