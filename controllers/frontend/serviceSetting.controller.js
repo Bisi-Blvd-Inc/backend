@@ -2,7 +2,7 @@ const serviceSettingCollection = require("../../models/serviceSetting");
 const businessService = require("../../models/businessService");
 const userCollection = require("../../models/user");
 const mongoose = require("mongoose");
-
+const emailSettingService=require('../../models/emailSetting')
 const createService = async (req, res) => {
   try {
     const { service } = req.body;
@@ -209,9 +209,87 @@ const updateService = async (req, res) => {
   }
 };
 
+const createEmailSetting = async (req, res) => {
+  try {
+    
+    const userId=req._user
+    let {description1,description2,ending}=req.body
+    description1=description1?.trim()
+    description2=description2?.trim()
+    ending=ending?.trim()
+
+    //check if user already done setting
+    const emailSettingData=await emailSettingService.findOne({addedBy:userId})
+    
+    if(emailSettingData){
+      //user already did some settings, so just update that document
+      emailSettingData.description1=description1
+      emailSettingData.description2=description2
+      emailSettingData.endsWith=ending
+      await emailSettingData.save()
+      
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Setting updated successfully",
+      });
+    }
+    else{
+      //user never did any setting, so create new document
+      const createSetting=await emailSettingService.create({
+        description1,
+        description2,
+        endsWith:ending,
+        addedBy:userId
+      })
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        message: "Setting created successfully",
+      });
+    }
+    
+  } catch (error) {
+   console.log(error)
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "An error occurred.",
+      error: error.message,
+    });
+  }
+};
+
+const getEmailSetting = async (req, res) => {
+  try {
+    
+    const userId=req._user
+    const emailSettingData=await emailSettingService.findOne({addedBy:userId})
+    
+ 
+      
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        emailSettingData,
+      })
+    
+  } catch (error) {
+   console.log(error)
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "An error occurred.",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createService,
   getService,
   updateStripeDetail,
   updateService,
+  createEmailSetting,
+  getEmailSetting
 };

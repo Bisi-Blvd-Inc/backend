@@ -9,6 +9,7 @@ const { find } = require("lodash");
 const { smtpSms } = require("../helpers/twilio")
 require("dotenv").config();
 
+
 const AdminUrl = process.env.ADMIN_BASE_URL;
 
 const getUser = async (values) => {
@@ -250,41 +251,115 @@ const sendBookingMail = async (
   time,
   bookingStatusVal,
   bookingId,
-  price
+  price,
+  description1,
+  description2,
+  endsWith
 ) => {
   try {
+   
     var parentDir = path.dirname("api");
     const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
       expiresIn: "5m",
     });
     const link = `${process.env.FRONT_BASE_URL}/editbooking/${bookingId}`;
-    email
-    ejs.renderFile(
-      parentDir + "/mail_template/emailtemplate.html",
-      {
-        link: link,
-        email: email,
-        name: name,
-        servicess: servicess,
-        bookingStatusVal: bookingStatusVal,
-        Date: Date,
-        time: time,
-        price: price,
-        ServiceDuration: ServiceDuration
-      },
-      (err, data) => {
-        if (err) {
-          console.log(err);
-        } else {
-          const emailData = {
-            email,
-            subject: `booking email`,
-            html: data,
-          };
-          return mail.sendMailerHtml(emailData);
+    if(description1.trim()=="" && description2.trim()==""){
+      // means use default template
+        ejs.renderFile(
+              parentDir + "/mail_template/emailtemplate.html",
+              {
+                link: link,
+                email: email,
+                name: name,
+                servicess: servicess,
+                bookingStatusVal: bookingStatusVal,
+                Date: Date,
+                time: time,
+                price: price,
+                ServiceDuration: ServiceDuration,
+
+              },
+              (err, data) => {
+                if (err) {
+                  console.log(err);
+                } else {
+                  const emailData = {
+                    email,
+                    subject: `booking email`,
+                    html: data,
+                  };
+                  return mail.sendMailerHtml(emailData);
+                }
+              }
+            );
+
+    }else{
+      function replaceStringBetween(str, target, replacement) {
+        // If the input string is empty, return an empty string
+        if (!str) {
+          return '';
         }
+      
+        let result = str;
+      
+        // Find all occurrences of the target string (case-sensitive)
+        let startIndex = result.indexOf(target);
+        let endIndex = startIndex + target.length;
+      
+        while (startIndex !== -1) {
+          // Construct the new string by replacing the substring between the current target occurrence
+          const start = result.slice(0, startIndex);
+          const middle = replacement;
+          const end = result.slice(endIndex);
+      
+          // Update the result with the replaced string
+          result = start + middle + end;
+      
+          // Find the next occurrence of the target string
+          startIndex = result.indexOf(target, endIndex);
+          endIndex = startIndex + target.length;
+        }
+      
+        return result;
       }
-    );
+      
+      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
+      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
+      
+      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
+      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
+      ejs.renderFile(
+        parentDir + "/mail_template/emailtemplateCustom.html",
+        {
+          link: link,
+          email: email,
+          name: name,
+          servicess: servicess,
+          bookingStatusVal: bookingStatusVal,
+          Date: Date,
+          time: time,
+          price: price,
+          ServiceDuration: ServiceDuration,
+          description1:description1Final,
+          description2:description2Final,
+          endsWith:endsWith
+
+        },
+        (err, data) => {
+          if (err) {
+            console.log(err);
+          } else {
+            const emailData = {
+              email,
+              subject: `booking email`,
+              html: data,
+            };
+            return mail.sendMailerHtml(emailData);
+          }
+        }
+      );
+    }
+    
   } catch (error) {
     throw error;
   }
