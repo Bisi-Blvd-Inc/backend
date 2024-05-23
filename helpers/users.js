@@ -325,17 +325,17 @@ const sendBookingMail = async (
         return result;
       }
       
-      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
-      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      // let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
+      // let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
       
-      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
-      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
-      const description1Parsed = htmlParser.parse(description1Final)
+      // let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
+      // let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Parsed = htmlParser.parse(description1)
       .toString()
       .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
       .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
 
-    const description2Parsed = htmlParser.parse(description2Final)
+    const description2Parsed = htmlParser.parse(description2)
       .toString()
       .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
       .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
@@ -457,17 +457,17 @@ const sendBookingMailExternal = async (
         return result;
       }
       
-      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
-      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      // let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
+      // let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
       
-      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
-      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
-      const description1Parsed = htmlParser.parse(description1Final)
+      // let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
+      // let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Parsed = htmlParser.parse(description1)
       .toString()
       .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
       .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
 
-    const description2Parsed = htmlParser.parse(description2Final)
+    const description2Parsed = htmlParser.parse(description2)
       .toString()
       .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
       .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
