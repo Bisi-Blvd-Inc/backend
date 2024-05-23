@@ -330,15 +330,11 @@ const sendBookingMail = async (
       
       // let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
       // let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
-      const description1Parsed = htmlParser.parse(description1)
-      .toString()
-      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
-      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
-
-    const description2Parsed = htmlParser.parse(description2)
-      .toString()
-      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
-      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Replaced = description1.replace(/#SERVICE_NAME#/g, `<b>${servicess , servicess}</b>`).replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      const description2Replaced = description2.replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`).replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Parsed = htmlParser.parse(description1Replaced).toString();
+      const description2Parsed = htmlParser.parse(description2Replaced).toString();
+      
       
       ejs.renderFile(
         parentDir + "/mail_template/emailtemplateCustom.html",
@@ -462,15 +458,10 @@ const sendBookingMailExternal = async (
       
       // let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
       // let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
-      const description1Parsed = htmlParser.parse(description1)
-      .toString()
-      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
-      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
-
-    const description2Parsed = htmlParser.parse(description2)
-      .toString()
-      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
-      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Replaced = description1.replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`).replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      const description2Replaced = description2.replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`).replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Parsed = htmlParser.parse(description1Replaced).toString();
+      const description2Parsed = htmlParser.parse(description2Replaced).toString();
       
       ejs.renderFile(
         parentDir + "/mail_template/emialexternalcustom.html",
