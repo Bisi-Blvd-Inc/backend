@@ -301,35 +301,34 @@ const sendBookingMail = async (
         if (!str) {
           return '';
         }
-
+      
         let result = str;
-
         // Find all occurrences of the target string (case-sensitive)
         let startIndex = result.indexOf(target);
         let endIndex = startIndex + target.length;
-
+      
         while (startIndex !== -1) {
           // Construct the new string by replacing the substring between the current target occurrence
           const start = result.slice(0, startIndex);
-          const middle = replacement;
+          const middle = `<b>${replacement}</b>`;
           const end = result.slice(endIndex);
-
+      
           // Update the result with the replaced string
           result = start + middle + end;
-
+      
           // Find the next occurrence of the target string
           startIndex = result.indexOf(target, endIndex);
           endIndex = startIndex + target.length;
         }
-
+      
         return result;
       }
-
-      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
-      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
-
-      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
-      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
+      
+      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", `<b>${servicess}</b>`);
+      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      
+      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", `<b>${servicess}</b>`);
+      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
       ejs.renderFile(
         parentDir + "/mail_template/emailtemplateCustom.html",
         {
@@ -424,34 +423,34 @@ const sendBookingMailExternal = async (
         if (!str) {
           return '';
         }
-
+      
         let result = str;
-
         // Find all occurrences of the target string (case-sensitive)
         let startIndex = result.indexOf(target);
         let endIndex = startIndex + target.length;
-
+      
         while (startIndex !== -1) {
           // Construct the new string by replacing the substring between the current target occurrence
           const start = result.slice(0, startIndex);
-          const middle = replacement;
+          const middle = `<b>${replacement}</b>`;
           const end = result.slice(endIndex);
-
+      
           // Update the result with the replaced string
           result = start + middle + end;
-
+      
           // Find the next occurrence of the target string
           startIndex = result.indexOf(target, endIndex);
           endIndex = startIndex + target.length;
         }
-
+      
         return result;
       }
-      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
-      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
-
-      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
-      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
+      
+      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", `<b>${servicess}</b>`);
+      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      
+      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", `<b>${servicess}</b>`);
+      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
 
       ejs.renderFile(
         parentDir + "/mail_template/emialexternalcustom.html",
