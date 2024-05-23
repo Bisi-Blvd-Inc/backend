@@ -324,11 +324,11 @@ const sendBookingMail = async (
         return result;
       }
       
-      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", `<b>${servicess}</b>`);
-      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
+      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
       
-      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", `<b>${servicess}</b>`);
-      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
+      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
       ejs.renderFile(
         parentDir + "/mail_template/emailtemplateCustom.html",
         {
