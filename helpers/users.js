@@ -7,6 +7,7 @@ const mail = require("../utilities/mail");
 const owner = require("../utilities/owner")
 const { find } = require("lodash");
 const { smtpSms } = require("../helpers/twilio")
+const htmlParser = require('node-html-parser');
 require("dotenv").config();
 
 
@@ -329,6 +330,16 @@ const sendBookingMail = async (
       
       let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
       let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Parsed = htmlParser.parse(description1Final)
+      .toString()
+      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
+      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+
+    const description2Parsed = htmlParser.parse(description2Final)
+      .toString()
+      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
+      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      
       ejs.renderFile(
         parentDir + "/mail_template/emailtemplateCustom.html",
         {
@@ -341,8 +352,8 @@ const sendBookingMail = async (
           time: time,
           price: price,
           ServiceDuration: ServiceDuration,
-          description1: description1Final,
-          description2: description2Final,
+          description1: description1Parsed,
+          description2: description2Parsed,
           endsWith: endsWith
 
         },
@@ -451,7 +462,16 @@ const sendBookingMailExternal = async (
       
       let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
       let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", `<b>${ServiceDuration + " at " + time}</b>`);
+      const description1Parsed = htmlParser.parse(description1Final)
+      .toString()
+      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
+      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
 
+    const description2Parsed = htmlParser.parse(description2Final)
+      .toString()
+      .replace(/#SERVICE_NAME#/g, `<b>${servicess}</b>`)
+      .replace(/#DATE#/g, `<b>${ServiceDuration + " at " + time}</b>`);
+      
       ejs.renderFile(
         parentDir + "/mail_template/emialexternalcustom.html",
         {
@@ -464,8 +484,8 @@ const sendBookingMailExternal = async (
           time: time,
           price: bookingPaymentStatus,
           ServiceDuration: ServiceDuration,
-          description1: description1Final,
-          description2: description2Final,
+          description1: description1Parsed,
+          description2: description2Parsed,
           endsWith: endsWith
         },
         (err, data) => {
