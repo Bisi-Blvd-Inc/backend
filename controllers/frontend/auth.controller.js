@@ -136,8 +136,8 @@ const signup = async (req, res) => {
 
           const createdUser = await authService.post(newUser);
 
-          sendActivationMail(email);
-          sendNewuserCreated(req?.body?.firstName, resultsArray);
+          await sendActivationMail(email);
+          await sendNewuserCreated(req?.body?.firstName, resultsArray);
           let notification = {
             title: "Your Business is Growing",
             text: `A new subscriber was added to your salon. Please ensure <strong>${createdUser.firstName}</strong> has accurate login credentials.`,
