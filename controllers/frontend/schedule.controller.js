@@ -84,7 +84,7 @@ const resendmail = async (req, res) => {
   try {
     const email = req?.body?.emaii;
     if (email) {
-      sendActivationMail(email)
+      await sendActivationMail(email)
       return res.status(200).json({
         status: 200,
         success: true,
