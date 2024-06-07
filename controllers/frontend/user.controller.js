@@ -39,6 +39,7 @@ const User = require("../../models/user");
 const { createNotification } = require("./notification.controller");
 const { smtpSms } = require("../../helpers/twilio");
 const { sendBookingMailOwner, sendBookingMailExternal } = require("../../helpers/users");
+const emailSettingService=require("../../models/emailSetting")
 
 const createUser = async (req, res) => {
   try {
@@ -633,7 +634,11 @@ const createExternalBooking = async (req, res) => {
       availableSlot,
       service,
     } = req.body;
-
+    const emailSettingData=await emailSettingService.findOne({addedBy:userId})
+    console.log(emailSettingData,"emailSettingDataemailSettingData")
+    const description1=emailSettingData?.description1 || ""
+    const description2=emailSettingData?.description2 || ""
+    const endsWith=emailSettingData?.endsWith || ""
 
     const salonOwner = await userCollection.findById(userId);
     if(salonOwner.isActivateAccount == true){
@@ -766,7 +771,10 @@ const createExternalBooking = async (req, res) => {
           time,
           bookingStatusVal,
           bookingId,
-          bookingPaymentStatus
+          bookingPaymentStatus,
+          description1,
+          description2,
+          endsWith
         );
 
         sendBookingMailOwner(
@@ -864,7 +872,10 @@ const createExternalBooking = async (req, res) => {
               time,
               bookingStatusVal,
               bookingId,
-              bookingPaymentStatus
+              bookingPaymentStatus,
+              description1,
+              description2,
+              endsWith
             );
             sendBookingMailOwner(
               ownerEmail,
@@ -988,7 +999,10 @@ const createExternalBooking = async (req, res) => {
               time,
               bookingStatusVal,
               bookingId,
-              bookingPaymentStatus
+              bookingPaymentStatus,
+              description1,
+              description2,
+              endsWith
             );
             sendBookingMailOwner(
               ownerEmail,
@@ -1132,7 +1146,10 @@ const createExternalBooking = async (req, res) => {
           time,
           bookingStatusVal,
           bookingId,
-          bookingPaymentStatus
+          bookingPaymentStatus,
+          description1,
+          description2,
+          endsWith
         );
 
         sendBookingMailOwner(
@@ -1256,7 +1273,10 @@ const createExternalBooking = async (req, res) => {
             time,
             bookingStatusVal,
             bookingId,
-            bookingPaymentStatus
+            bookingPaymentStatus,
+            description1,
+            description2,
+            endsWith
           );
 
           sendBookingMailOwner(
@@ -1407,7 +1427,10 @@ const createExternalBooking = async (req, res) => {
             time,
             bookingStatusVal,
             bookingId,
-            bookingPaymentStatus
+            bookingPaymentStatus,
+            description1,
+            description2,
+            endsWith
           );
 
           sendBookingMailOwner(
