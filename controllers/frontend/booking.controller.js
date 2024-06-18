@@ -13,7 +13,7 @@ const { smtpSms } = require("../../helpers/twilio");
 const Mongoose = require("mongoose");
 const { pick } = require("lodash");
 const businessService = require("../../services/business.service");
-
+const emailSettingService=require("../../models/emailSetting")
 const createBooking = async (req, res) => {
   try {
     let {
@@ -38,6 +38,7 @@ const createBooking = async (req, res) => {
       scheduleexist,
     } = req.body;
     const userId = req._user;
+    
     if (availableSlot == null || availableSlot == "null") {
       return res.status(500).json({
         success: false,
@@ -102,6 +103,15 @@ const createBooking = async (req, res) => {
       benificialPhone: benificialPhone,
       scheduleexist: scheduleexist,
     };
+
+    //email setting data
+    const emailSettingData=await emailSettingService.findOne({addedBy:userId})
+    const description1=emailSettingData?.description1 || ""
+    const description2=emailSettingData?.description2 || ""
+    const endsWith=emailSettingData?.endsWith || ""
+
+    console.log(emailSettingData,description1,description2,endsWith," maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+
     if (exist) {
       if (bookingType == "self") {
         const alreadySchdule = await bookingCollection.find({
@@ -141,7 +151,10 @@ const createBooking = async (req, res) => {
           time,
           bookingStatusVal,
           bookingId,
-          price
+          price,
+          description1,
+          description2,
+          endsWith
         );
         if (createdBooking) {
           const schedule = await calenderSettingService.find({
@@ -212,7 +225,10 @@ const createBooking = async (req, res) => {
               time,
               bookingStatusVal,
               bookingId,
-              price
+              price,
+              description1,
+              description2,
+              endsWith
             );
 
             if (createdBooking) {
@@ -289,7 +305,10 @@ const createBooking = async (req, res) => {
               time,
               bookingStatusVal,
               bookingId,
-              price
+              price,
+              description1,
+              description2,
+              endsWith
             );
             if (createdBooking) {
               const schedule = await calenderSettingService.find({
@@ -389,7 +408,10 @@ const createBooking = async (req, res) => {
           time,
           bookingStatusVal,
           bookingId,
-          price
+          price,
+          description1,
+              description2,
+          endsWith
         );
         if (createdBooking) {
           const schedule = await calenderSettingService.find({
@@ -469,7 +491,10 @@ const createBooking = async (req, res) => {
             time,
             bookingStatusVal,
             bookingId,
-            price
+            price,
+            description1,
+              description2,
+            endsWith
           );
           if (createdBooking) {
             const schedule = await calenderSettingService.find({
@@ -555,7 +580,10 @@ const createBooking = async (req, res) => {
             time,
             bookingStatusVal,
             bookingId,
-            price
+            price,
+            description1,
+              description2,
+            endsWith
           );
           if (createdBooking) {
             const schedule = await calenderSettingService.find({
@@ -588,6 +616,7 @@ const createBooking = async (req, res) => {
       }
     }
   } catch (error) {
+    console.log(error)
     return res.status(500).json({ code: 500, message: error.message });
   }
 };

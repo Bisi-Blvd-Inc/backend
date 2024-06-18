@@ -23,6 +23,7 @@ exports.authMiddleware = async (req, res, next) => {
    
     return next();
   } catch (error) {
+    
     return res.status(200).json({ success: false, message: error.message });
   }
 };

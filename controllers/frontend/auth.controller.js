@@ -1,6 +1,7 @@
 const authService = require("../../services/auth.services");
 const businessService = require("../../services/business.service");
 const bookingService = require("../../services/booking.service")
+const emailSettingService=require('../../models/emailSetting')
 const _ = require("lodash");
 const { pick } = require("lodash");
 const { createAdminNotification } = require("./notification.controller");
@@ -90,6 +91,7 @@ const signin = async (req, res) => {
 
 const signup = async (req, res) => {
   try {
+    console.log("hereeeeeeee")
     const {
       email,
       password,
@@ -134,8 +136,8 @@ const signup = async (req, res) => {
 
           const createdUser = await authService.post(newUser);
 
-          sendActivationMail(email);
-          sendNewuserCreated(req?.body?.firstName, resultsArray);
+          await sendActivationMail(email);
+          await sendNewuserCreated(req?.body?.firstName, resultsArray);
           let notification = {
             title: "Your Business is Growing",
             text: `A new subscriber was added to your salon. Please ensure <strong>${createdUser.firstName}</strong> has accurate login credentials.`,
@@ -145,7 +147,7 @@ const signup = async (req, res) => {
           };
 
           await createAdminNotification(notification);
-
+          await emailSettingService.create({description1:"",description2:"",endsWith:"",addedBy:createdUser._id})
           return res.status(201).json({
             success: true,
             message: "Registered successfully, Please verify email!",
@@ -171,7 +173,7 @@ const signup = async (req, res) => {
         firstName,
         createdUser._id
       );
-
+      await emailSettingService.create({description1:"",description2:"",endsWith:"",addedBy:createdUser._id})
       return res.status(201).json({
         success: true,
         message: "Staff add successfully.. ",
