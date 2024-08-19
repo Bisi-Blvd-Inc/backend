@@ -136,10 +136,11 @@ const getDateDiff = (condition) => {
 const updateUser = async (Id, userBody) => {
   try {
     const user = await userCollection.findById(Id);
-    const coupons = await stripe.coupons.list();
+    const coupons = await stripe.coupons.list({
+      limit: 100
+    });
     const desiredCouponName = userBody.planDeatils.couponName;
-    const selectedCoupon = coupons.data.find(coupon => coupon.name === desiredCouponName);
-    // return console.log(selectedCoupon,"selectedCoupon")
+    const selectedCoupon = coupons.data.find(coupon => coupon.name === desiredCouponName.trim());
     let customerId = user?.subscription?.customer;
     if (customerId) {
       const paymentMethodFinal = await stripe.paymentMethods.attach(
