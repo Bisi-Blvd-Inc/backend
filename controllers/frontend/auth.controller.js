@@ -5,6 +5,7 @@ const emailSettingService=require('../../models/emailSetting')
 const _ = require("lodash");
 const { pick } = require("lodash");
 const { createAdminNotification } = require("./notification.controller");
+const { sendLeadConnectorWebhook } = require("./webhook.controller");
 const { generateToken, comparePassword, verifyJWT } = require("../../helpers/helper");
 const bcrypt = require("bcrypt");
 const { sendForgotPasswordMailForFrontend } = require("../../helpers/helper");
@@ -135,6 +136,8 @@ const signup = async (req, res) => {
 
 
           const createdUser = await authService.post(newUser);
+
+          sendLeadConnectorWebhook(createdUser);
 
           await sendActivationMail(email);
           await sendNewuserCreated(req?.body?.firstName, resultsArray);
