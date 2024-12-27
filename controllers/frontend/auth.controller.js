@@ -5,11 +5,11 @@ const emailSettingService=require('../../models/emailSetting')
 const _ = require("lodash");
 const { pick } = require("lodash");
 const { createAdminNotification } = require("./notification.controller");
-const { sendLeadConnectorWebhook } = require("./webhook.controller");
 const { generateToken, comparePassword, verifyJWT } = require("../../helpers/helper");
 const bcrypt = require("bcrypt");
 const { sendForgotPasswordMailForFrontend } = require("../../helpers/helper");
 const { sendActivationMail, returnAccountActivationMail, sendReturnuser, activateAccount, sendWrongPasswordMail, accountactivationMailToOwner, accountDeactivationMailToOwner, sendNewuserCreated, accountDeactivationMail, accountactivationMail } = require("../../helpers/users");
+const {sendLeadConnectorWebhook} = require("../../helpers/marketingConnector");
 
 const signin = async (req, res) => {
   try {
