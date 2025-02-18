@@ -633,6 +633,7 @@ const createExternalBooking = async (req, res) => {
       selectedCountry,
       availableSlot,
       service,
+      scheduleexist,
     } = req.body;
     const emailSettingData=await emailSettingService.findOne({addedBy:userId})
     console.log(emailSettingData,"emailSettingDataemailSettingData")
@@ -721,6 +722,7 @@ const createExternalBooking = async (req, res) => {
       benificialName: benificialName,
       benificialEmail: benificialEmail,
       benificialPhone: benificialPhone,
+      scheduleexist: scheduleexist,
     };
     if (exist) {
       const CustomerObj = {
