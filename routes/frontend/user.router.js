@@ -46,6 +46,7 @@ router.post("/getFilterPaymentHistory", authMiddleware, userController.getFilter
 router.post("/getPaymentById", authMiddleware, userController.getPaymentById);
 router.get("/countryCode", userController.getCountryCode);
 router.get("/searchPayment",authMiddleware,userController.getSearchPaymentHistory)
+router.get("/getAllInventory", userController.getAllInventory);
 
 
 module.exports = router;
