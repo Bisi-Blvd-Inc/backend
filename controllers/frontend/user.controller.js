@@ -40,6 +40,7 @@ const { createNotification } = require("./notification.controller");
 const { smtpSms } = require("../../helpers/twilio");
 const { sendBookingMailOwner, sendBookingMailExternal } = require("../../helpers/users");
 const emailSettingService=require("../../models/emailSetting")
+const mongoose = require("mongoose");
 
 const createUser = async (req, res) => {
   try {
@@ -633,6 +634,7 @@ const createExternalBooking = async (req, res) => {
       selectedCountry,
       availableSlot,
       service,
+      scheduleexist,
     } = req.body;
     const emailSettingData=await emailSettingService.findOne({addedBy:userId})
     console.log(emailSettingData,"emailSettingDataemailSettingData")
@@ -721,6 +723,7 @@ const createExternalBooking = async (req, res) => {
       benificialName: benificialName,
       benificialEmail: benificialEmail,
       benificialPhone: benificialPhone,
+      scheduleexist: scheduleexist,
     };
     if (exist) {
       const CustomerObj = {
@@ -2068,6 +2071,43 @@ const getCountryCode = async (req, res) => {
   }
 }
 
+const getAllInventory = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const response = await inventoryCollection.aggregate([
+      { $match: { userId: mongoose.Types.ObjectId(userId) , isDeleted : false } },
+      {
+        $lookup: {
+          from: "businessService",
+          localField: "service",
+          foreignField: "_id",
+          as: "service",
+        },
+      },
+    
+      { $sort: { name: -1 } },
+      {
+        $facet: {
+          data: [{ $skip: 0 }, { $limit: 1000 }],
+        },
+      },
+    ]);
+    if (!response) {
+      return res.status(200).json({
+        message: "Data not found",
+        status: 404,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Data get successfully",
+        data: response,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
 
 module.exports = {
   createUser,
@@ -2107,5 +2147,6 @@ module.exports = {
   getSearchPaymentHistory,
   getCountryCode,
   restoreHistory,
-  deleteHistory
+  deleteHistory,
+  getAllInventory,
 };
