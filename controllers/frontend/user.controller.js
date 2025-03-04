@@ -2108,6 +2108,27 @@ const getAllInventory = async (req, res) => {
   }
 }
 
+const getSingleInventory = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const response = await inventoryCollection.findOne({_id:id}).populate("service")
+      if (!response) {
+        return res.status(200).json({
+          message: "Data not found",
+          status: 404,
+        });
+      } else {
+        return res.status(200).json({
+          message: "Data get successfully",
+          data: response,
+          totalCount: response.length,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+}
+
 
 module.exports = {
   createUser,
@@ -2149,4 +2170,5 @@ module.exports = {
   restoreHistory,
   deleteHistory,
   getAllInventory,
+  getSingleInventory,
 };
