@@ -9,6 +9,7 @@ const { generateToken, comparePassword, verifyJWT } = require("../../helpers/hel
 const bcrypt = require("bcrypt");
 const { sendForgotPasswordMailForFrontend } = require("../../helpers/helper");
 const { sendActivationMail, returnAccountActivationMail, sendReturnuser, activateAccount, sendWrongPasswordMail, accountactivationMailToOwner, accountDeactivationMailToOwner, sendNewuserCreated, accountDeactivationMail, accountactivationMail } = require("../../helpers/users");
+const {sendLeadConnectorWebhook} = require("../../helpers/marketingConnector");
 
 const signin = async (req, res) => {
   try {
@@ -136,8 +137,10 @@ const signup = async (req, res) => {
 
           const createdUser = await authService.post(newUser);
 
-          sendActivationMail(email);
-          sendNewuserCreated(req?.body?.firstName, resultsArray);
+          sendLeadConnectorWebhook(createdUser);
+
+          await sendActivationMail(email);
+          await sendNewuserCreated(req?.body?.firstName, resultsArray);
           let notification = {
             title: "Your Business is Growing",
             text: `A new subscriber was added to your salon. Please ensure <strong>${createdUser.firstName}</strong> has accurate login credentials.`,

@@ -222,7 +222,6 @@ const accountactivationMail = async (firstname, email) => {
   }
 };
 
-
 const NewPaymentactivationMail = async (firstname, Plan) => {
 
   try {
@@ -242,7 +241,6 @@ const NewPaymentactivationMail = async (firstname, Plan) => {
     throw error;
   }
 };
-
 
 
 const accountDeactivationMailToOwner = async (firstname, email) => {
