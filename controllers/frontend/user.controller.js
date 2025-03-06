@@ -42,6 +42,7 @@ const { sendBookingMailOwner, sendBookingMailExternal } = require("../../helpers
 const emailSettingService=require("../../models/emailSetting")
 const mongoose = require("mongoose");
 
+
 const createUser = async (req, res) => {
   try {
     const { firstName, email, password } = req.body;

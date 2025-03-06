@@ -125,7 +125,7 @@ const sendNewuserCreated = async (firstName, resultsArray) => {
 
   try {
     const emailData = {
-      email: "gautammalik.eminence@gmail.com",
+      email: "admin@bisiblvd.com.",
       subject: `New Subscriber added`,
       html: `
           <p>Dear Noelle <p>
@@ -146,7 +146,7 @@ const sendReturnuser = async (firstName, resultsArray) => {
 
   try {
     const emailData = {
-      email: "gautammalik.eminence@gmail.com",
+      email: "admin@bisiblvd.com.",
       subject: `User will be back`,
       html: `
           <p>Dear Noelle <p>
@@ -221,6 +221,28 @@ const accountactivationMail = async (firstname, email) => {
     throw error;
   }
 };
+
+const NewPaymentactivationMail = async (firstname, Plan) => {
+
+  try {
+    const emailData = {
+      email: "admin@bisiblvd.com",
+      subject: `New subscriber`,
+      html: `
+          <p>New subscriber ${firstname} Added <p>
+          <p> 
+          Dear <b style="color:green;"> ${firstname} </b> Purchase a plan </p>
+          <hr />
+          <p></p>
+      `
+    };
+    return owner.sendOwnerMailer(emailData);
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 const accountDeactivationMailToOwner = async (firstname, email) => {
 
   try {
@@ -809,5 +831,6 @@ module.exports = {
   accountactivationMailToOwner,
   accountDeactivationMailToOwner,
   returnAccountActivationMail,
-  sendReturnuser
+  sendReturnuser,
+  NewPaymentactivationMail
 };
