@@ -7,9 +7,16 @@ var InventorySchema = new Schema(
     price: { type: Number,required: true  },
     productstock: { type: Number,required: true  },
     service: [{ type: Schema.Types.ObjectId, ref: "businessService" }],
-    productimg: { type: String },
+    productimgs: [{ type: String }],
     isDeleted: { type: Boolean, default: false },
     userId: { type: Schema.Types.ObjectId, ref: "User" },
+    estUsage: [
+      {
+        serviceId: { type: Schema.Types.ObjectId, ref: "businessService" },
+        value: { type: Number, default: 0 },
+      }
+    ],
+    description: { type: String },
   },
   {
     timestamps: { createdAt: true, updatedAt: true },
