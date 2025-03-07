@@ -79,7 +79,7 @@ const getSingleInventory = async (req, res) => {
 
 const editInventory = async (req, res) => {
   try {
-    const { name, price, productstock, productimgs, service, estUsage, description } = req.body;
+    const { name, price, productstock, productimgs, service, estUsage, description, existingImgs } = req.body;
     const Id = req.params.id;
 
     if (req.files) {
@@ -93,7 +93,9 @@ const editInventory = async (req, res) => {
       };
 
       let productImgs = req.files.map(file => file.filename);
-      data.productimgs = productImgs;
+      const existingImages = JSON.parse(existingImgs || '[]');
+      const allProductImgs = [...existingImages, ...productImgs];
+      data.productimgs = allProductImgs;
 
       let result = await inventoryService.update(Id, data);
       return res.status(200).json({
