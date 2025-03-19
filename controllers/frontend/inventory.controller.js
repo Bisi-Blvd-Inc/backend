@@ -3,18 +3,21 @@ const inventoryModel = require("../../models/inventory");
 
 const createInventory = async (req, res) => {
   try {
-    let productimg = req?.file?.filename;
-    const { name, productstock, service, price } = req.body;
+    let productimgs = req.files.map(file => file.filename);
+    const { name, productstock, service, price, estUsage, description } = req.body;
     const servises = JSON.parse(service);
+    const estUsages = JSON.parse(estUsage);
 
     const userId = req._user;
     let newInventory = new inventoryModel({
       userId,
       name,
-      productimg,
+      productimgs,
       productstock,
+      description,
       service: servises,
       price,
+      estUsage: estUsages,
     });
     await newInventory.save();
     return res.status(200).json({
@@ -76,19 +79,23 @@ const getSingleInventory = async (req, res) => {
 
 const editInventory = async (req, res) => {
   try {
-    const { name, price, productstock, productimg, service } = req.body;
+    const { name, price, productstock, productimgs, service, estUsage, description, existingImgs } = req.body;
     const Id = req.params.id;
 
-    if (req.file) {
+    if (req.files) {
       const data = {
         name: name,
         price: price,
         productstock: productstock,
         service: JSON.parse(service),
+        estUsage: JSON.parse(estUsage),
+        description: description,
       };
 
-      let productImg = req?.file?.filename;
-      data.productimg = productImg;
+      let productImgs = req.files.map(file => file.filename);
+      const existingImages = JSON.parse(existingImgs || '[]');
+      const allProductImgs = [...existingImages, ...productImgs];
+      data.productimgs = allProductImgs;
 
       let result = await inventoryService.update(Id, data);
       return res.status(200).json({
@@ -101,9 +108,11 @@ const editInventory = async (req, res) => {
       const obj = {
         name: name,
         price: price,
-        productimg: productimg,
+        productimgs: productimgs,
         productstock: productstock,
         service: service,
+        estUsage: estUsage,
+        description: description,
       };
       let result = await inventoryService.update(Id, obj);
       return res.status(200).json({
