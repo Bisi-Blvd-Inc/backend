@@ -48,6 +48,7 @@ router.get("/countryCode", userController.getCountryCode);
 router.get("/searchPayment",authMiddleware,userController.getSearchPaymentHistory)
 router.post("/getAllInventory", userController.getAllInventory);
 router.get("/getInventory/:id", userController.getSingleInventory);
+router.post("/getBusinessClasses", userController.getBusinessClasses);
 
 
 module.exports = router;

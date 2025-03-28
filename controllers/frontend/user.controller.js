@@ -4,6 +4,7 @@ const usersService = require("../../services/users.services");
 const customerCollection = require("../../services/customer.service");
 const customerService = require("../../services/customer.service");
 const paymentCollection = require("../../models/paymentHistory");
+const businessClassService = require("../../services/businessClass.service");
 const Mongoose = require("mongoose");
 const serviceName = require("../../models/businessService");
 const BookingLink = require("../../models/customizedLink");
@@ -2130,6 +2131,26 @@ const getSingleInventory = async (req, res) => {
     }
 }
 
+const getBusinessClasses = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const response = await businessClassService.getClassById(userId);
+    if (!response) {
+      return res.status(200).json({
+        message: "Data not found",
+        status: 404,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Data get successfully",
+        data: response,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 
 module.exports = {
   createUser,
@@ -2172,4 +2193,5 @@ module.exports = {
   deleteHistory,
   getAllInventory,
   getSingleInventory,
+  getBusinessClasses,
 };
