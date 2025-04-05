@@ -810,6 +810,86 @@ const planAlertMail = async (email, name) => {
     throw error;
   }
 };
+const sendProductPaymentMail = async (
+  customerName,
+  customerMail,
+  orderId,
+  productsDesciption,
+  totalPrice,
+  paymentDate,
+  paymentTime,
+) => {
+  try {
+    var parentDir = path.dirname("api");
+    const token = jwt.sign({ customerMail }, process.env.JWT_ACCOUNT_ACTIVATION, {
+      expiresIn: "5m",
+    });
+    customerMail
+    ejs.renderFile(
+      parentDir + "/mail_template/productPaymentTemplate.html",
+      {
+        customerName: customerName,
+        products: productsDesciption,
+        paymentDate: paymentDate,
+        orderId: orderId,
+        totalPrice: totalPrice,
+        paymentTime: paymentTime,
+      },
+      (err, data) => {
+        if (err) {
+          console.log(err);
+        } else {
+          const emailData = {
+            customerMail,
+            subject: `Product payment email`,
+            html: data,
+          };
+          return mail.sendMailerHtml(emailData);
+        }
+      }
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+const sendProductBookingOwner = async (
+  customerName,
+  email,
+  ownderName,
+  productsDesciption,
+) => {
+  console.log("Email here", email);
+  try {
+    var parentDir = path.dirname("api");
+    const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
+      expiresIn: "5m",
+    });
+    email
+    ejs.renderFile(
+      parentDir + "/mail_template/productBookingTemplate.html",
+      {
+        customerName: customerName,
+        products: productsDesciption,
+        ownderName: ownderName,
+        date: new Date().toDateString(),
+      },
+      (err, data) => {
+        if (err) {
+          console.log(err);
+        } else {
+          const emailData = {
+            email,
+            subject: `Product booking email`,
+            html: data,
+          };
+          return mail.sendMailerHtml(emailData);
+        }
+      }
+    );
+  } catch (error) {
+    throw error;
+  }
+};
 module.exports = {
   getUser,
   sendActivationMail,
@@ -832,5 +912,7 @@ module.exports = {
   accountDeactivationMailToOwner,
   returnAccountActivationMail,
   sendReturnuser,
-  NewPaymentactivationMail
+  NewPaymentactivationMail,
+  sendProductPaymentMail,
+  sendProductBookingOwner,
 };
