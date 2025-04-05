@@ -7,7 +7,7 @@ var ProductSchema = new Schema(
     price: { type: Number, required: true },
     inventoryId: { type: Schema.Types.ObjectId, ref: "Inventory" },
     addedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    userId: { type: Schema.Types.ObjectId, ref: "UserBooking" },
+    userId: { type: Schema.Types.ObjectId, ref: "Customer" },
   },
   {
     collection: "product",

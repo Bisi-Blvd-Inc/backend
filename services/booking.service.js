@@ -31,7 +31,7 @@ const findByName = (name, userId) => {
   ]);
 };
 const findById = (id) => {
-  return bookingCollection.findOne({ _id: id }).populate("service");
+  return bookingCollection.findOne({ _id: id }).populate("service").populate("classes").populate("products");
 };
 const find = (condition) => {
   const [paymentStatus, service, startDate, endDate] = condition;
@@ -163,7 +163,7 @@ const findCustomerWithName = (condition) => {
   return customerCollection.find({ name: condition });
 };
 const findBycutomerID = (condition) => {
-  return bookingCollection.find(condition).populate("service");
+  return bookingCollection.find(condition).populate("service").populate("classes").populate("products");
 };
 
 
