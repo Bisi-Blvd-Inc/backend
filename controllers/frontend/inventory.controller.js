@@ -3,10 +3,10 @@ const inventoryModel = require("../../models/inventory");
 
 const createInventory = async (req, res) => {
   try {
-    let productimgs = req.files.map(file => file.filename);
+    let productimgs = req?.files?.map(file => file?.filename);
     const { name, productstock, service, price, estUsage, description } = req.body;
-    const servises = JSON.parse(service);
-    const estUsages = JSON.parse(estUsage);
+    const servises = JSON.parse(service ?? null);
+    const estUsages = JSON.parse(estUsage ?? null);
 
     const userId = req._user;
     let newInventory = new inventoryModel({
