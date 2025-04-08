@@ -6,16 +6,30 @@ const create = async (req, res) => {
     const payload = {
       name,
       price,
-      classTime,
-      availableSeats,
+      instructor,
+      description,
+      date,
+      seats,
+      difficultyLevel,
+      location,
+      isReoccurring,
+      startTime,
+      endTime,
       addedBy: req._user,
     };
     const result = await businessClassService.post(payload);
-    return res.status(200).json({
-      message: "Classes added successfully",
-      success: true,
-      data: result,
-    });
+    if (result) {
+      return res.status(200).json({
+        message: "Classes added successfully",
+        success: true,
+        data: result,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Unable to add classes",
+      });
+    }
   } catch (error) {
    return res.status(500).json({ error: error.message, success: false, });
   }

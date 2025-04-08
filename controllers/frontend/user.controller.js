@@ -686,36 +686,40 @@ const createExternalBooking = async (req, res) => {
     const ownerEmail = salonOwner?.email;
     const ownerName = salonOwner?.firstName;
 
-    if (availableSlot == null || availableSlot == "null") {
-      return res.status(500).json({
-        success: false,
-        message: "Something went wrong",
-        status: 500,
-      });
-    }
-
-    let totalHours = 0;
-    let totalMinutes = 0;
+    let durationDescription = "";
+    let businessClassData = [];
     let servicess = [];
 
     // Either Class or Service
     if (serviceType === "Class") {
-      const businessClassData = await businessClassCollection.find({
+      businessClassData = await businessClassCollection.find({
         _id: { $in: classes },
       });
-      totalHours += businessClassData[0]?.classTime?.hours;
-      totalMinutes += businessClassData[0]?.classTime?.minutes;
+      const classStartTime = moment(businessClassData[0]?.startTime, "hh:mm A");
+      const classEndTime = moment(businessClassData[0]?.endTime, "hh:mm A");
+      const duration = moment.duration(classEndTime.diff(classStartTime));
+      const hours = Math.floor(duration.asHours());
+      const minutes = duration.minutes();
+      durationDescription = `${hours} hours ${minutes} minutes`;
       servicess = `${businessClassData[0]?.name} class (${numberOfSeats} ${
         numberOfSeats > 1 ? "seats" : "seat"
       })`;
     } else {
+      if (availableSlot == null || availableSlot == "null") {
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong",
+          status: 500,
+        });
+      }
+      let totalHours = 0;
+      let totalMinutes = 0;
       const serviceVal = service?.map(Mongoose.Types.ObjectId);
       const singleBooking = await serviceName.find({
         _id: {
           $in: serviceVal,
         },
       });
-
       const serviceDuration = await serviceSettingCollection.find({
         addedBy: userId,
       });
@@ -729,18 +733,18 @@ const createExternalBooking = async (req, res) => {
           totalMinutes += service?.serviceTime?.minutes;
         }
       });
+      if (totalMinutes >= 60) {
+        const extraHours = Math.floor(totalMinutes / 60);
+        totalHours += extraHours;
+        totalMinutes -= extraHours * 60;
+      }
+
+      durationDescription = `${totalHours} hours ${totalMinutes} minutes`;
       servicess = singleBooking?.map((item) => {
         return item?.service;
       });
     }
 
-    if (totalMinutes >= 60) {
-      const extraHours = Math.floor(totalMinutes / 60);
-      totalHours += extraHours;
-      totalMinutes -= extraHours * 60;
-    }
-
-    const ServiceDuration = `${totalHours} hours ${totalMinutes} minutes`;
     const getToken = await userService?.getUser(userId);
 
     const exist = await customerCollection.findOne({
@@ -806,7 +810,7 @@ const createExternalBooking = async (req, res) => {
           name,
           servicess,
           bookingDate,
-          ServiceDuration,
+          durationDescription,
           time,
           bookingStatusVal,
           bookingId,
@@ -828,15 +832,28 @@ const createExternalBooking = async (req, res) => {
           price
         );
         if (createdBooking) {
-          const schedule = await calenderSettingService.find({
-            addedBy: userId,
-          });
-
-          const Id = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-          let result = await calenderSettingService.update(Id, obj);
+          // If class or service
+          if (serviceType === "Class") {
+            const businessClassId = businessClassData[0]?._id;
+            const obj = {
+              seats: {
+                availableSeats:
+                  businessClassData[0]?.seats?.availableSeats - numberOfSeats,
+                bookedSeats:
+                  businessClassData[0]?.seats?.bookedSeats + numberOfSeats,
+                totalSeats: businessClassData[0]?.seats?.totalSeats,
+              },
+            };
+            await businessClassService.updateById(businessClassId, obj);
+          } else {
+            const schedule = await calenderSettingService.find({
+              addedBy: userId,
+            });
+            const obj = {
+              scheduledData: availableSlot,
+            };
+            await calenderSettingService.update(schedule?._id, obj);
+          }
 
           // Update products if exist
           if (products?.length > 0) {
@@ -938,7 +955,7 @@ const createExternalBooking = async (req, res) => {
               name,
               servicess,
               bookingDate,
-              ServiceDuration,
+              durationDescription,
               time,
               bookingStatusVal,
               bookingId,
@@ -1066,7 +1083,7 @@ const createExternalBooking = async (req, res) => {
               name,
               servicess,
               bookingDate,
-              ServiceDuration,
+              durationDescription,
               time,
               bookingStatusVal,
               bookingId,
@@ -1196,7 +1213,7 @@ const createExternalBooking = async (req, res) => {
           bookingId: createdBooking._id,
         };
         const CustomerId = createCustomer._id;
-        let result = await customerService.update(CustomerId, data);
+        await customerService.update(CustomerId, data);
 
         const bookingStatusVal = createdBooking.bookingStatus;
         const bookingDate = createdBooking.startDateTime.slice(0, 15);
@@ -1212,7 +1229,7 @@ const createExternalBooking = async (req, res) => {
           name,
           servicess,
           bookingDate,
-          ServiceDuration,
+          durationDescription,
           time,
           bookingStatusVal,
           bookingId,
@@ -1234,15 +1251,28 @@ const createExternalBooking = async (req, res) => {
           price
         );
         if (createdBooking) {
-          const schedule = await calenderSettingService.find({
-            addedBy: userId,
-          });
-
-          const Id = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-          let result = await calenderSettingService.update(Id, obj);
+          // If class or service
+          if (serviceType === "Class") {
+            const businessClassId = businessClassData[0]?._id;
+            const obj = {
+              seats: {
+                availableSeats:
+                  businessClassData[0]?.seats?.availableSeats - numberOfSeats,
+                bookedSeats:
+                  businessClassData[0]?.seats?.bookedSeats + numberOfSeats,
+                totalSeats: businessClassData[0]?.seats?.totalSeats,
+              },
+            };
+            await businessClassService.updateById(businessClassId, obj);
+          } else {
+            const schedule = await calenderSettingService.find({
+              addedBy: userId,
+            });
+            const obj = {
+              scheduledData: availableSlot,
+            };
+            await calenderSettingService.update(schedule?._id, obj);
+          }
 
           // Update products if exist
           if (products?.length > 0) {
@@ -1369,7 +1399,7 @@ const createExternalBooking = async (req, res) => {
             name,
             servicess,
             bookingDate,
-            ServiceDuration,
+            durationDescription,
             time,
             bookingStatusVal,
             bookingId,
@@ -1524,7 +1554,7 @@ const createExternalBooking = async (req, res) => {
             name,
             servicess,
             bookingDate,
-            ServiceDuration,
+            durationDescription,
             time,
             bookingStatusVal,
             bookingId,
@@ -1621,12 +1651,13 @@ const ExternalBookingPayment = async (req, res) => {
       classes,
     } = req.body;
 
-    let totalHours = 0;
-    let totalMinutes = 0;
     let combinedDescription = "";
+    let durationDescription = "";
 
     // Either booking a service or a class
     if (service?.length > 0) {
+      let totalHours = 0;
+      let totalMinutes = 0;
       const serviceVal = service?.map(Mongoose.Types.ObjectId);
       const serviceDuration = await serviceSettingCollection.find({
         addedBy: userId,
@@ -1647,12 +1678,22 @@ const ExternalBookingPayment = async (req, res) => {
       combinedDescription = bookedService
         .map((item) => `${item.service}`)
         .join(", ");
+      if (totalMinutes >= 60) {
+        const extraHours = Math.floor(totalMinutes / 60);
+        totalHours += extraHours;
+        totalMinutes -= extraHours * 60;
+      }
+      durationDescription = `${totalHours} hours ${totalMinutes} minutes`;
     } else if (classes?.length > 0) {
       const businessClassData = await businessClassCollection.find({
         _id: { $in: classes },
       });
-      totalHours += businessClassData[0]?.classTime?.hours;
-      totalMinutes += businessClassData[0]?.classTime?.minutes;
+      const classStartTime = moment(businessClassData[0]?.startTime, "hh:mm A");
+      const classEndTime = moment(businessClassData[0]?.endTime, "hh:mm A");
+      const duration = moment.duration(classEndTime.diff(classStartTime));
+      const hours = Math.floor(duration.asHours());
+      const minutes = duration.minutes();
+      durationDescription = `${hours} hours ${minutes} minutes`;
       combinedDescription = `${
         businessClassData[0]?.name
       } class (${numberOfSeats} ${numberOfSeats > 1 ? "seats" : "seat"})`;
@@ -1663,13 +1704,6 @@ const ExternalBookingPayment = async (req, res) => {
       });
     }
 
-    if (totalMinutes >= 60) {
-      const extraHours = Math.floor(totalMinutes / 60);
-      totalHours += extraHours;
-      totalMinutes -= extraHours * 60;
-    }
-
-    const ServiceDuration = `${totalHours} hours ${totalMinutes} minutes`;
     const salonOwner = await userCollection.findById(userId);
     const stripeInstance = stripe(salonOwner.secretKey);
     const products = await stripeInstance.products.list();
@@ -1730,7 +1764,7 @@ const ExternalBookingPayment = async (req, res) => {
         email,
         combinedDescription,
         date,
-        ServiceDuration,
+        durationDescription,
         paymentTime,
         invoiceId,
         totalPrice
