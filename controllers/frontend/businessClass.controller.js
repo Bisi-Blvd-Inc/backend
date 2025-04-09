@@ -2,7 +2,19 @@ const businessClassService = require("../../services/businessClass.service");
 
 const create = async (req, res) => {
   try {
-    const { name, price, classTime, availableSeats } = req.body;
+    const {
+      name,
+      price,
+      instructor,
+      description,
+      date,
+      seats,
+      difficultyLevel,
+      location,
+      isReoccurring,
+      startTime,
+      endTime,
+    } = req.body;
     const payload = {
       name,
       price,
@@ -31,7 +43,7 @@ const create = async (req, res) => {
       });
     }
   } catch (error) {
-   return res.status(500).json({ error: error.message, success: false, });
+    return res.status(500).json({ error: error.message, success: false });
   }
 };
 
@@ -72,7 +84,10 @@ const getClassById = async (req, res) => {
 const updateClass = async (req, res) => {
   try {
     const payload = req.body;
-    const result = await businessClassService.updateById(req.params.id, payload);
+    const result = await businessClassService.updateById(
+      req.params.id,
+      payload
+    );
     if (result) {
       return res.status(200).json({
         message: "Classes updated successfully",
