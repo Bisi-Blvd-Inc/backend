@@ -20,12 +20,12 @@ var businessClassSchema = new Schema(
       enum: ["Beginner", "Intermediate", "Advanced"],
       default: "Beginner",
     },
-    location: {
-      type: String,
-      enum: ["Online", "Offline"],
-      default: "Offline",
-    },
+    location: { type: String },
     isReoccurring: { type: Boolean, default: false },
+    reoccurringDays: {
+      type: String,
+      enum: ["Weekly", "Monthly", "Yearly"],
+    },
     isDeleted: { type: Boolean, default: false },
     addedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
