@@ -3,26 +3,37 @@ const bookingService = require("../../services/booking.service");
 const usersService = require("../../services/users.services");
 const customerCollection = require("../../services/customer.service");
 const customerService = require("../../services/customer.service");
+const productService = require("../../services/product.service");
+const inventoryService = require("../../services/inventory.service");
 const paymentCollection = require("../../models/paymentHistory");
+const businessClassService = require("../../services/businessClass.service");
 const Mongoose = require("mongoose");
 const serviceName = require("../../models/businessService");
 const BookingLink = require("../../models/customizedLink");
 const calenderSettingService = require("../../services/schedule.service");
 var nodeCron = require("node-cron");
 const serviceSettingCollection = require("../../models/serviceSetting");
-const { planAlertMail, sendPaymentMail } = require("../../helpers/users");
+const {
+  planAlertMail,
+  sendPaymentMail,
+  sendProductPaymentMail,
+  sendProductBookingOwner,
+  sendBookingMailOwner,
+  sendBookingMailExternal,
+} = require("../../helpers/users");
 const { pick } = require("lodash");
-const notificatinCollection = require("../../models/notification")
-const businessServiceCollection = require("../../models/businessService")
-const customerCollectionModel = require("../../models/customer")
+const notificatinCollection = require("../../models/notification");
+const businessServiceCollection = require("../../models/businessService");
+const customerCollectionModel = require("../../models/customer");
 const bookingCollection = require("../../models/booking");
+const businessClassCollection = require("../../models/businessClass");
 const scheduleCollection = require("../../models/schedule");
 const customersLinkCollection = require("../../models/customizedLink");
 const personalBudgetCollection = require("../../models/personalBudget");
 // const serviceSettingCollection = require ("../../models/serviceSetting");
 // const upgradeCollection =  require("../../models/upgrade");
-const goalsCollection =  require("../../models/goalsCompanyBudget");
-const inventoryCollection =  require("../../models/inventory");
+const goalsCollection = require("../../models/goalsCompanyBudget");
+const inventoryCollection = require("../../models/inventory");
 // const paymentCollection = require("../../models/paymentHistory");
 const userDetailFileuploadCollection = require("../../models/userDetailfileupload");
 const userdetailNotes = require("../../models/userdetailnotes");
@@ -34,14 +45,12 @@ const Cryptr = require("cryptr");
 const cryptr = new Cryptr("secretKey");
 const moment = require("moment");
 const stripe = require("stripe");
-const countryCodes = require('country-codes-list')
+const countryCodes = require("country-codes-list");
 const User = require("../../models/user");
 const { createNotification } = require("./notification.controller");
 const { smtpSms } = require("../../helpers/twilio");
-const { sendBookingMailOwner, sendBookingMailExternal } = require("../../helpers/users");
-const emailSettingService=require("../../models/emailSetting")
+const emailSettingService = require("../../models/emailSetting");
 const mongoose = require("mongoose");
-
 
 const createUser = async (req, res) => {
   try {
@@ -76,10 +85,12 @@ const createUser = async (req, res) => {
 const restoreHistory = async (req, res) => {
   try {
     const { id } = req.body;
-    const user1 = await usersService.update(id , {HistoryActivateStatus : true});
+    const user1 = await usersService.update(id, {
+      HistoryActivateStatus: true,
+    });
     if (user1)
       return res.status(200).json({
-        status:200 ,
+        status: 200,
         success: true,
         message: "Restore all data !",
       });
@@ -90,26 +101,43 @@ const restoreHistory = async (req, res) => {
   }
 };
 
-
-
 const deleteHistory = async (req, res) => {
   try {
     const { id } = req.body;
-    const notificationResult = await notificatinCollection.deleteMany({ bookedBy: id });
-    const businessServiceResult = await businessServiceCollection.deleteMany({ addedBy: id });
-    const customerResult = await customerCollectionModel.deleteMany({ userId: id });
+    const notificationResult = await notificatinCollection.deleteMany({
+      bookedBy: id,
+    });
+    const businessServiceResult = await businessServiceCollection.deleteMany({
+      addedBy: id,
+    });
+    const customerResult = await customerCollectionModel.deleteMany({
+      userId: id,
+    });
     const bookingResult = await bookingCollection.deleteMany({ userId: id });
     const scheduleResult = await scheduleCollection.deleteMany({ addedBy: id });
-    const customersLinkResult = await customersLinkCollection.deleteMany({ userId: id });
-    const personalBudgetResult = await personalBudgetCollection.deleteMany({ addedBy: id });
-    const serviceSettingResult = await serviceSettingCollection.deleteMany({ addedBy: id });
+    const customersLinkResult = await customersLinkCollection.deleteMany({
+      userId: id,
+    });
+    const personalBudgetResult = await personalBudgetCollection.deleteMany({
+      addedBy: id,
+    });
+    const serviceSettingResult = await serviceSettingCollection.deleteMany({
+      addedBy: id,
+    });
     const upgradeResult = await upgradeCollection.deleteMany({ userId: id });
     const goalsResult = await goalsCollection.deleteMany({ addedBy: id });
-    const inventoryResult = await inventoryCollection.deleteMany({ userId: id });
+    const inventoryResult = await inventoryCollection.deleteMany({
+      userId: id,
+    });
     const paymentResult = await paymentCollection.deleteMany({ userId: id });
-    const userDetailFileuploadResult = await userDetailFileuploadCollection.deleteMany({ addedByowner: id });
-    const userdetailNotesResult = await userdetailNotes.deleteMany({ addedBy: id });
-    const userDetailSoapResult = await userDetailSoap.deleteMany({ addedBy: id });
+    const userDetailFileuploadResult =
+      await userDetailFileuploadCollection.deleteMany({ addedByowner: id });
+    const userdetailNotesResult = await userdetailNotes.deleteMany({
+      addedBy: id,
+    });
+    const userDetailSoapResult = await userDetailSoap.deleteMany({
+      addedBy: id,
+    });
 
     // Check if any of the operations failed
     if (
@@ -139,11 +167,11 @@ const deleteHistory = async (req, res) => {
       throw new Error("One or more delete operations failed");
     }
   } catch (error) {
-    return res.status(500).json({ status: 500, success: false, message: error.message });
+    return res
+      .status(500)
+      .json({ status: 500, success: false, message: error.message });
   }
 };
-
-
 
 const getUser = async (req, res) => {
   try {
@@ -400,7 +428,6 @@ const getUserByIdforDashboard = async (req, res) => {
   }
 };
 
-
 nodeCron.schedule("0 0 * * * ", async () => {
   try {
     const response = await userService.getDateDiff();
@@ -480,7 +507,6 @@ const deleteSubscription = async (req, res) => {
 const userWebhook = async (req, res) => {
   const event = req.body;
   if (event.type === "payment_intent.succeeded") {
-
     let customerId = event.data.object.customer;
     const user = await userCollection.findOne({
       stripeCustomerId: customerId,
@@ -636,70 +662,90 @@ const createExternalBooking = async (req, res) => {
       availableSlot,
       service,
       scheduleexist,
+      serviceType,
+      numberOfSeats,
+      classes,
+      products,
     } = req.body;
-    const emailSettingData=await emailSettingService.findOne({addedBy:userId})
-    console.log(emailSettingData,"emailSettingDataemailSettingData")
-    const description1=emailSettingData?.description1 || ""
-    const description2=emailSettingData?.description2 || ""
-    const endsWith=emailSettingData?.endsWith || ""
+    const emailSettingData = await emailSettingService.findOne({
+      addedBy: userId,
+    });
+    const description1 = emailSettingData?.description1 || "";
+    const description2 = emailSettingData?.description2 || "";
+    const endsWith = emailSettingData?.endsWith || "";
 
     const salonOwner = await userCollection.findById(userId);
-    if(salonOwner.isActivateAccount == true){
+    if (salonOwner.isActivateAccount == true) {
       return res.status(400).json({
         success: true,
         message: "Link is Expired",
         status: 400,
       });
-    } 
-    const bookingPaymentStatus = paymentType === "Offline" ? "UnPaid" : "Paid";
+    }
 
     const ownerEmail = salonOwner?.email;
     const ownerName = salonOwner?.firstName;
 
-    if (availableSlot == null || availableSlot == "null") {
-      return res.status(500).json({
-        success: false,
-        message: "Something went wrong",
-        status: 500,
+    let durationDescription = "";
+    let businessClassData = [];
+    let servicess = [];
+
+    // Either Class or Service
+    if (serviceType === "Class") {
+      businessClassData = await businessClassCollection.find({
+        _id: { $in: classes },
+      });
+      const classStartTime = moment(businessClassData[0]?.startTime, "hh:mm A");
+      const classEndTime = moment(businessClassData[0]?.endTime, "hh:mm A");
+      const duration = moment.duration(classEndTime.diff(classStartTime));
+      const hours = Math.floor(duration.asHours());
+      const minutes = duration.minutes();
+      durationDescription = `${hours} hours ${minutes} minutes`;
+      servicess = `${businessClassData[0]?.name} class (${numberOfSeats} ${
+        numberOfSeats > 1 ? "seats" : "seat"
+      })`;
+    } else {
+      if (availableSlot == null || availableSlot == "null") {
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong",
+          status: 500,
+        });
+      }
+      let totalHours = 0;
+      let totalMinutes = 0;
+      const serviceVal = service?.map(Mongoose.Types.ObjectId);
+      const singleBooking = await serviceName.find({
+        _id: {
+          $in: serviceVal,
+        },
+      });
+      const serviceDuration = await serviceSettingCollection.find({
+        addedBy: userId,
+      });
+      const serviceValSet = new Set(serviceVal?.map((val) => val.toString()));
+      const serviceTime = serviceDuration[0]?.service;
+
+      serviceTime?.forEach((service) => {
+        const serviceIdString = service?.serviceId.toString();
+        if (serviceValSet.has(serviceIdString)) {
+          totalHours += service?.serviceTime?.hours;
+          totalMinutes += service?.serviceTime?.minutes;
+        }
+      });
+      if (totalMinutes >= 60) {
+        const extraHours = Math.floor(totalMinutes / 60);
+        totalHours += extraHours;
+        totalMinutes -= extraHours * 60;
+      }
+
+      durationDescription = `${totalHours} hours ${totalMinutes} minutes`;
+      servicess = singleBooking?.map((item) => {
+        return item?.service;
       });
     }
 
-    const serviceVal = [];
-    const serviceData = service?.map(async (item) => {
-      serviceVal.push(Mongoose.Types.ObjectId(item));
-    });
-    const singleBooking = await serviceName.find({
-      _id: {
-        $in: serviceVal,
-      },
-    });
-
-    const serviceDuration = await serviceSettingCollection.find({ addedBy: userId });
-    const serviceValSet = new Set(serviceVal?.map(val => val.toString()));
-    const serviceTime = serviceDuration[0]?.service;
-    let totalHours = 0;
-    let totalMinutes = 0;
-
-    serviceTime?.forEach(service => {
-      const serviceIdString = service?.serviceId.toString();
-      if (serviceValSet.has(serviceIdString)) {
-        totalHours += service?.serviceTime?.hours;
-        totalMinutes += service?.serviceTime?.minutes;
-      }
-    });
-
-    if (totalMinutes >= 60) {
-      const extraHours = Math.floor(totalMinutes / 60);
-      totalHours += extraHours;
-      totalMinutes -= extraHours * 60;
-    }
-
-    const ServiceDuration = `${totalHours} hours ${totalMinutes} minutes`;
     const getToken = await userService?.getUser(userId);
-
-    const servicess = singleBooking?.map((item) => {
-      return item?.service;
-    });
 
     const exist = await customerCollection.findOne({
       email: email?.toLowerCase(),
@@ -725,21 +771,11 @@ const createExternalBooking = async (req, res) => {
       benificialEmail: benificialEmail,
       benificialPhone: benificialPhone,
       scheduleexist: scheduleexist,
+      classes: classes,
+      numberOfSeats: numberOfSeats,
+      serviceType: serviceType,
     };
     if (exist) {
-      const CustomerObj = {
-        name: obj?.benificialName?.toLowerCase(),
-        email: obj?.benificialEmail,
-        phoneNumber: obj?.benificialPhone,
-        selectedBenificialCountry: obj?.selectedBenificialCountry,
-        userId: Mongoose.Types.ObjectId(userId),
-      };
-
-      const customerId = await customerService.findOne({
-        email: { $regex: new RegExp(CustomerObj?.email, "i") },
-        userId: userId,
-      });
-
       if (bookingType == "self") {
         const newObj = {
           ...obj,
@@ -754,9 +790,12 @@ const createExternalBooking = async (req, res) => {
 
         const userData = await bookingService.findById(bookingId);
 
-        const notificationService = userData?.service?.map((item) => {
-          return item?.service;
-        });
+        const notificationService =
+          serviceType === "Class"
+            ? userData?.classes[0]?.name
+            : userData?.service?.map((item) => {
+                return item?.service;
+              });
 
         const bookingStatusVal = createdBooking?.bookingStatus;
         const bookingDate = createdBooking?.startDateTime.slice(0, 15);
@@ -771,11 +810,11 @@ const createExternalBooking = async (req, res) => {
           name,
           servicess,
           bookingDate,
-          ServiceDuration,
+          durationDescription,
           time,
           bookingStatusVal,
           bookingId,
-          bookingPaymentStatus,
+          paymentType,
           description1,
           description2,
           endsWith
@@ -793,28 +832,70 @@ const createExternalBooking = async (req, res) => {
           price
         );
         if (createdBooking) {
-          const schedule = await calenderSettingService.find({
-            addedBy: userId,
-          });
+          // If class or service
+          if (serviceType === "Class") {
+            const businessClassId = businessClassData[0]?._id;
+            const obj = {
+              seats: {
+                availableSeats:
+                  businessClassData[0]?.seats?.availableSeats - numberOfSeats,
+                bookedSeats:
+                  businessClassData[0]?.seats?.bookedSeats + numberOfSeats,
+                totalSeats: businessClassData[0]?.seats?.totalSeats,
+              },
+            };
+            await businessClassService.updateById(businessClassId, obj);
+          } else {
+            const schedule = await calenderSettingService.find({
+              addedBy: userId,
+            });
+            const obj = {
+              scheduledData: availableSlot,
+            };
+            await calenderSettingService.update(schedule?._id, obj);
+          }
 
-          const Id = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-          let result = await calenderSettingService.update(Id, obj);
+          // Update products if exist
+          if (products?.length > 0) {
+            const productData = await Promise.all(
+              products.map(async (item) => {
+                const inventory = await inventoryService.getInventoryById(
+                  item?.productId
+                );
+                const updatedStock = inventory?.productstock - item?.quantity;
+                await inventoryService.update(item?.productId, {
+                  productstock: updatedStock,
+                });
+                return {
+                  addedBy: userId,
+                  userId: exist?._id,
+                  inventoryId: item?.productId,
+                  price: item?.price,
+                  quantity: item?.quantity,
+                };
+              })
+            );
+            const createdProducts = await productService.createMultiple(
+              productData
+            );
+            await bookingService.update(bookingId, {
+              products: createdProducts?.map((product) => product?._id),
+            });
+          }
         }
         let notification = {
           title: "You’ve Got Booked",
-          text: `Cha-ching $! Your closer to your revenue goal! <strong>${createdBooking?.name
-            }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
-              createdBooking.startDateTime
-            ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
-              createdBooking.startDateTime
-            )
-              .utcOffset("+05:30")
-              .format(
-                "hh:mm A"
-              )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
+          text: `Cha-ching $! Your closer to your revenue goal! <strong>${
+            createdBooking?.name
+          }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
+            createdBooking.startDateTime
+          ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
+            createdBooking.startDateTime
+          )
+            .utcOffset("+05:30")
+            .format(
+              "hh:mm A"
+            )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
           clientName: createdBooking.name,
           type: "Booking",
           bookedBy: userId,
@@ -824,14 +905,16 @@ const createExternalBooking = async (req, res) => {
         };
 
         await createNotification(notification);
-        const countryCode = selectedCountry.split(' ')[1];
-        let smsData = {
-          to: `${countryCode}${createdBooking.phoneNumber}`,
-          text: "Your Booked Service Appointment is confirmed."
+        const countryCode = selectedCountry.split(" ")[1];
 
-        };
+        if (createdBooking?.phoneNumber?.length > 0) {
+          let smsData = {
+            to: `${countryCode}${createdBooking.phoneNumber}`,
+            text: "Your Booked Service Appointment is confirmed.",
+          };
 
-        await smtpSms(smsData);
+          await smtpSms(smsData);
+        }
         return res.status(200).json({
           success: true,
           message: "Booking added successfully",
@@ -872,11 +955,11 @@ const createExternalBooking = async (req, res) => {
               name,
               servicess,
               bookingDate,
-              ServiceDuration,
+              durationDescription,
               time,
               bookingStatusVal,
               bookingId,
-              bookingPaymentStatus,
+              paymentType,
               description1,
               description2,
               endsWith
@@ -905,16 +988,17 @@ const createExternalBooking = async (req, res) => {
             }
             let notification = {
               title: "You’ve Got Booked",
-              text: `Cha-ching $! Your closer to your revenue goal! <strong>${createdBooking?.name
-                }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
-                  createdBooking.startDateTime
-                ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
-                  createdBooking.startDateTime
-                )
-                  .utcOffset("+05:30")
-                  .format(
-                    "hh:mm A"
-                  )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
+              text: `Cha-ching $! Your closer to your revenue goal! <strong>${
+                createdBooking?.name
+              }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
+                createdBooking.startDateTime
+              ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
+                createdBooking.startDateTime
+              )
+                .utcOffset("+05:30")
+                .format(
+                  "hh:mm A"
+                )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
               clientName: createdBooking.name,
               type: "Booking",
               bookedBy: userId,
@@ -923,10 +1007,10 @@ const createExternalBooking = async (req, res) => {
               fcmToken: getToken.fcmToken,
             };
             await createNotification(notification);
-            const countryCode = selectedCountry.split(' ')[1];
+            const countryCode = selectedCountry.split(" ")[1];
             let smsData = {
               to: `${countryCode}${createdBooking.phoneNumber}`,
-              text: "Your Booked Service Appointment is confirmed."
+              text: "Your Booked Service Appointment is confirmed.",
             };
 
             await smtpSms(smsData);
@@ -999,11 +1083,11 @@ const createExternalBooking = async (req, res) => {
               name,
               servicess,
               bookingDate,
-              ServiceDuration,
+              durationDescription,
               time,
               bookingStatusVal,
               bookingId,
-              bookingPaymentStatus,
+              paymentType,
               description1,
               description2,
               endsWith
@@ -1032,16 +1116,17 @@ const createExternalBooking = async (req, res) => {
             }
             let notification1 = {
               title: "You’ve Got Booked",
-              text: `Cha-ching $! Your closer to your revenue goal! <strong>${createdBooking?.name
-                }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
-                  createdBooking.startDateTime
-                ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
-                  createdBooking.startDateTime
-                )
-                  .utcOffset("+05:30")
-                  .format(
-                    "hh:mm A"
-                  )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
+              text: `Cha-ching $! Your closer to your revenue goal! <strong>${
+                createdBooking?.name
+              }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
+                createdBooking.startDateTime
+              ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
+                createdBooking.startDateTime
+              )
+                .utcOffset("+05:30")
+                .format(
+                  "hh:mm A"
+                )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
               clientName: createdBooking.name,
               type: "Booking",
               bookedBy: userId,
@@ -1052,11 +1137,10 @@ const createExternalBooking = async (req, res) => {
 
             await createNotification(notification1);
 
-            const countryCode = createdBooking.selectedCountry.split(' ')[1];
+            const countryCode = createdBooking.selectedCountry.split(" ")[1];
             let smsData = {
               to: `${countryCode}${createdBooking.phoneNumber}`,
-              text: "Your Booked Service Appointment is confirmed."
-
+              text: "Your Booked Service Appointment is confirmed.",
             };
 
             await smtpSms(smsData);
@@ -1092,7 +1176,6 @@ const createExternalBooking = async (req, res) => {
         benificialPhone: benificialPhone,
       };
       if (bookingType == "self") {
-
         const createCustomer = await customerService.post(obj3);
         let notification3 = {
           title: "Your Business is Growing",
@@ -1115,21 +1198,22 @@ const createExternalBooking = async (req, res) => {
           bookedBy: userId,
         };
 
-
-
         const createdBooking = await bookingService.post(newObj);
         const bookingId = createdBooking._id;
         const userData = await bookingService.findById(bookingId);
 
-        const notificationService = userData.service.map((item) => {
-          return item.service;
-        });
+        const notificationService =
+          serviceType === "Class"
+            ? userData?.classes[0]?.name
+            : userData?.service?.map((item) => {
+                return item?.service;
+              });
         const data = {
           ...obj3,
           bookingId: createdBooking._id,
         };
         const CustomerId = createCustomer._id;
-        let result = await customerService.update(CustomerId, data);
+        await customerService.update(CustomerId, data);
 
         const bookingStatusVal = createdBooking.bookingStatus;
         const bookingDate = createdBooking.startDateTime.slice(0, 15);
@@ -1140,17 +1224,16 @@ const createExternalBooking = async (req, res) => {
         var time = dateObj.format("hh:mm:A");
         const price = paymentType === "Owning" ? "UnPaid" : "Paid";
 
-
         sendBookingMailExternal(
           email,
           name,
           servicess,
           bookingDate,
-          ServiceDuration,
+          durationDescription,
           time,
           bookingStatusVal,
           bookingId,
-          bookingPaymentStatus,
+          paymentType,
           description1,
           description2,
           endsWith
@@ -1168,30 +1251,71 @@ const createExternalBooking = async (req, res) => {
           price
         );
         if (createdBooking) {
-          const schedule = await calenderSettingService.find({
-            addedBy: userId,
-          });
+          // If class or service
+          if (serviceType === "Class") {
+            const businessClassId = businessClassData[0]?._id;
+            const obj = {
+              seats: {
+                availableSeats:
+                  businessClassData[0]?.seats?.availableSeats - numberOfSeats,
+                bookedSeats:
+                  businessClassData[0]?.seats?.bookedSeats + numberOfSeats,
+                totalSeats: businessClassData[0]?.seats?.totalSeats,
+              },
+            };
+            await businessClassService.updateById(businessClassId, obj);
+          } else {
+            const schedule = await calenderSettingService.find({
+              addedBy: userId,
+            });
+            const obj = {
+              scheduledData: availableSlot,
+            };
+            await calenderSettingService.update(schedule?._id, obj);
+          }
 
-          const Id = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-          let result = await calenderSettingService.update(Id, obj);
+          // Update products if exist
+          if (products?.length > 0) {
+            const productData = await Promise.all(
+              products.map(async (item) => {
+                const inventory = await inventoryService.getInventoryById(
+                  item?.productId
+                );
+                const updatedStock = inventory?.productstock - item?.quantity;
+                await inventoryService.update(item?.productId, {
+                  productstock: updatedStock,
+                });
+                return {
+                  addedBy: userId,
+                  userId: createCustomer?._id,
+                  inventoryId: item?.productId,
+                  price: item?.price,
+                  quantity: item?.quantity,
+                };
+              })
+            );
+            const createdProducts = await productService.createMultiple(
+              productData
+            );
+            await bookingService.update(bookingId, {
+              products: createdProducts?.map((product) => product?._id),
+            });
+          }
         }
-
 
         let notification4 = {
           title: "You’ve Got Booked",
-          text: `Cha-ching $! Your closer to your revenue goal! <strong>${createdBooking?.name
-            }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
-              createdBooking?.startDateTime
-            ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
-              createdBooking?.startDateTime
-            )
-              .utcOffset("+05:30")
-              .format(
-                "hh:mm A"
-              )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
+          text: `Cha-ching $! Your closer to your revenue goal! <strong>${
+            createdBooking?.name
+          }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
+            createdBooking?.startDateTime
+          ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
+            createdBooking?.startDateTime
+          )
+            .utcOffset("+05:30")
+            .format(
+              "hh:mm A"
+            )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
           clientName: createdBooking?.name,
           type: "Booking",
           bookedBy: userId,
@@ -1202,13 +1326,15 @@ const createExternalBooking = async (req, res) => {
 
         await createNotification(notification4);
 
-        const countryCode = selectedCountry.split(' ')[1];
-        let smsData = {
-          to: `${countryCode}${createdBooking.phoneNumber}`,
-          text: "Your Booked Service Appointment is confirmed."
-        };
+        const countryCode = selectedCountry.split(" ")[1];
+        if (createdBooking?.phoneNumber?.length > 0) {
+          let smsData = {
+            to: `${countryCode}${createdBooking.phoneNumber}`,
+            text: "Your Booked Service Appointment is confirmed.",
+          };
 
-        await smtpSms(smsData);
+          await smtpSms(smsData);
+        }
 
         return res.status(200).json({
           success: true,
@@ -1273,11 +1399,11 @@ const createExternalBooking = async (req, res) => {
             name,
             servicess,
             bookingDate,
-            ServiceDuration,
+            durationDescription,
             time,
             bookingStatusVal,
             bookingId,
-            bookingPaymentStatus,
+            paymentType,
             description1,
             description2,
             endsWith
@@ -1308,16 +1434,17 @@ const createExternalBooking = async (req, res) => {
 
             let notification6 = {
               title: "You’ve Got Booked",
-              text: `Cha-ching $! Your closer to your revenue goal! <strong>${createdBooking?.name
-                }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
-                  createdBooking.startDateTime
-                ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
-                  createdBooking.startDateTime
-                )
-                  .utcOffset("+05:30")
-                  .format(
-                    "hh:mm A"
-                  )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
+              text: `Cha-ching $! Your closer to your revenue goal! <strong>${
+                createdBooking?.name
+              }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
+                createdBooking.startDateTime
+              ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
+                createdBooking.startDateTime
+              )
+                .utcOffset("+05:30")
+                .format(
+                  "hh:mm A"
+                )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
               clientName: createdBooking.name,
               type: "Booking",
               bookedBy: userId,
@@ -1327,10 +1454,10 @@ const createExternalBooking = async (req, res) => {
             };
             await createNotification(notification6);
 
-            const countryCode = selectedCountry.split(' ')[1];
+            const countryCode = selectedCountry.split(" ")[1];
             let smsData2 = {
               to: `${countryCode}${createdBooking.phoneNumber}`,
-              text: "Your Booked Service Appointment is confirmed."
+              text: "Your Booked Service Appointment is confirmed.",
             };
 
             await smtpSms(smsData2);
@@ -1427,11 +1554,11 @@ const createExternalBooking = async (req, res) => {
             name,
             servicess,
             bookingDate,
-            ServiceDuration,
+            durationDescription,
             time,
             bookingStatusVal,
             bookingId,
-            bookingPaymentStatus,
+            paymentType,
             description1,
             description2,
             endsWith
@@ -1463,16 +1590,17 @@ const createExternalBooking = async (req, res) => {
 
           let notification9 = {
             title: "You’ve Got Booked",
-            text: `Cha-ching $! Your closer to your revenue goal! <strong>${createdBooking?.name
-              }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
-                createdBooking.startDateTime
-              ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
-                createdBooking.startDateTime
-              )
-                .utcOffset("+05:30")
-                .format(
-                  "hh:mm A"
-                )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
+            text: `Cha-ching $! Your closer to your revenue goal! <strong>${
+              createdBooking?.name
+            }</strong> just booked <strong>${notificationService}</strong> for <strong>${moment(
+              createdBooking.startDateTime
+            ).format("YYYY-MM-DD")}</strong> & <strong>${moment(
+              createdBooking.startDateTime
+            )
+              .utcOffset("+05:30")
+              .format(
+                "hh:mm A"
+              )}</strong>. Do your happy dance!! Remember, they could have gone to someone else.`,
             clientName: createdBooking.name,
             type: "Booking",
             bookedBy: userId,
@@ -1482,10 +1610,10 @@ const createExternalBooking = async (req, res) => {
           };
           await createNotification(notification9);
 
-          const countryCode = selectedCountry.split(' ')[1];
+          const countryCode = selectedCountry.split(" ")[1];
           let smsData2 = {
             to: `${countryCode}${createdBooking.phoneNumber}`,
-            text: "Your Booked Service Appointment is confirmed."
+            text: "Your Booked Service Appointment is confirmed.",
           };
 
           await smtpSms(smsData2);
@@ -1517,64 +1645,66 @@ const ExternalBookingPayment = async (req, res) => {
       selectedBenificialCountry,
       selectedCountry,
       phone,
-      benificialPhone
+      benificialPhone,
+      totalPrice,
+      numberOfSeats,
+      classes,
     } = req.body;
 
+    let combinedDescription = "";
+    let durationDescription = "";
 
-    const servicePrice = await serviceSettingCollection.findOne({
-      addedBy: userId,
-    });
-    const serviceVal = [];
-    const serviceData = service?.map(async (item) => {
-      serviceVal.push(Mongoose.Types.ObjectId(item));
-    });
-    const serviceDuration = await serviceSettingCollection.find({ addedBy: userId });
-    const serviceValSet = new Set(serviceVal?.map(val => val.toString()));
-    const serviceTime = serviceDuration[0]?.service;
-
-    let totalHours = 0;
-    let totalMinutes = 0;
-
-    serviceTime?.forEach(service => {
-      const serviceIdString = service?.serviceId.toString();
-      if (serviceValSet.has(serviceIdString)) {
-        totalHours += service?.serviceTime?.hours;
-        totalMinutes += service?.serviceTime?.minutes;
-      }
-    });
-
-    if (totalMinutes >= 60) {
-      const extraHours = Math.floor(totalMinutes / 60);
-      totalHours += extraHours;
-      totalMinutes -= extraHours * 60;
-    }
-
-    const ServiceDuration = `${totalHours} hours ${totalMinutes} minutes`;
-
-    const bookedService = await serviceName.find({
-      _id: { $in: service },
-    });
-    const descriptions = bookedService.map((item) => `${item.service}`);
-    const combinedDescription = descriptions.join(", ");
-    const matchingPrices = [];
-
-    for (const matchingId of service) {
-      const matchingService = servicePrice.service.find((data) => {
-        return data.serviceId.toString() === matchingId.toString();
+    // Either booking a service or a class
+    if (service?.length > 0) {
+      let totalHours = 0;
+      let totalMinutes = 0;
+      const serviceVal = service?.map(Mongoose.Types.ObjectId);
+      const serviceDuration = await serviceSettingCollection.find({
+        addedBy: userId,
       });
+      const serviceValSet = new Set(serviceVal?.map((val) => val.toString()));
+      const serviceTime = serviceDuration[0]?.service;
 
-      if (matchingService) {
-        matchingPrices.push(matchingService.price);
+      serviceTime?.forEach((service) => {
+        const serviceIdString = service?.serviceId.toString();
+        if (serviceValSet.has(serviceIdString)) {
+          totalHours += service?.serviceTime?.hours;
+          totalMinutes += service?.serviceTime?.minutes;
+        }
+      });
+      const bookedService = await serviceName.find({
+        _id: { $in: service },
+      });
+      combinedDescription = bookedService
+        .map((item) => `${item.service}`)
+        .join(", ");
+      if (totalMinutes >= 60) {
+        const extraHours = Math.floor(totalMinutes / 60);
+        totalHours += extraHours;
+        totalMinutes -= extraHours * 60;
       }
+      durationDescription = `${totalHours} hours ${totalMinutes} minutes`;
+    } else if (classes?.length > 0) {
+      const businessClassData = await businessClassCollection.find({
+        _id: { $in: classes },
+      });
+      const classStartTime = moment(businessClassData[0]?.startTime, "hh:mm A");
+      const classEndTime = moment(businessClassData[0]?.endTime, "hh:mm A");
+      const duration = moment.duration(classEndTime.diff(classStartTime));
+      const hours = Math.floor(duration.asHours());
+      const minutes = duration.minutes();
+      durationDescription = `${hours} hours ${minutes} minutes`;
+      combinedDescription = `${
+        businessClassData[0]?.name
+      } class (${numberOfSeats} ${numberOfSeats > 1 ? "seats" : "seat"})`;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "No Bookings Found",
+      });
     }
-
-    const Price = matchingPrices.reduce((sum, price) => sum + price, 0);
-
-
-    const finalPrice = Price;
 
     const salonOwner = await userCollection.findById(userId);
-
     const stripeInstance = stripe(salonOwner.secretKey);
     const products = await stripeInstance.products.list();
     var Product = products.data.find((p) => p.name === "Bisi");
@@ -1585,18 +1715,17 @@ const ExternalBookingPayment = async (req, res) => {
     }
     const price = await stripeInstance.prices.create({
       product: Product.id,
-      unit_amount: finalPrice * 100,
+      unit_amount: totalPrice * 100,
       currency: "usd",
     });
 
     if (paymentType == "Paid") {
-
       const paymentIntent = await stripeInstance.paymentIntents.create({
-        amount: finalPrice * 100,
+        amount: totalPrice * 100,
         customer: customerId,
         payment_method: paymentMethodId,
         metadata: {
-          product_id: Product.id
+          product_id: Product.id,
         },
         currency: "usd",
       });
@@ -1635,38 +1764,34 @@ const ExternalBookingPayment = async (req, res) => {
         email,
         combinedDescription,
         date,
-        ServiceDuration,
+        durationDescription,
         paymentTime,
         invoiceId,
-        finalPrice
+        totalPrice
       );
 
-      const countryCode = selectedCountry.split(' ')[1];
-      const countryCode2 = selectedBenificialCountry.split(' ')[1];
+      const countryCode = selectedCountry?.split(" ")[1];
+      const countryCode2 = selectedBenificialCountry?.split(" ")[1];
       if (selectedBenificialCountry && benificialPhone) {
         let smsData = {
           to: `${countryCode}${phone}`,
-          text: "Your Booked Service Appointment is confirmed."
+          text: "Your Booked Service Appointment is confirmed.",
         };
 
         let smsData2 = {
           to: `${countryCode2}${benificialPhone}`,
-          text: "Your Booked Service Appointment is confirmed."
+          text: "Your Booked Service Appointment is confirmed.",
         };
-
 
         await smtpSms(smsData);
         await smtpSms(smsData2);
-      } else {
+      } else if (phone?.length > 0) {
         let smsData = {
           to: `${countryCode}${phone}`,
-          text: "Your Booked Service Appointment is confirmed."
+          text: "Your Booked Service Appointment is confirmed.",
         };
         await smtpSms(smsData);
       }
-
-
-
 
       const obj = {
         name: name,
@@ -1750,7 +1875,6 @@ const getExternalCustomer = async (req, res) => {
   }
 };
 
-
 const getCustomerWithName = async (req, res) => {
   try {
     const name = req.body[0]?.name;
@@ -1765,7 +1889,6 @@ const getCustomerWithName = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 const retrieveInvoice = async (req, res) => {
   try {
@@ -1814,14 +1937,14 @@ const getPaymentHistory = async (req, res) => {
   }
 };
 
-
 const getSearchPaymentHistory = async (req, res) => {
   try {
     let { text, pageNo, limit } = req.query;
-    let text1 = text.trim()
-    const regex = new RegExp(text1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    let text1 = text.trim();
+    const regex = new RegExp(text1.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 
-    const response = await paymentCollection.find({ userId: req._user, name: regex })
+    const response = await paymentCollection
+      .find({ userId: req._user, name: regex })
       .skip((pageNo - 1) * limit)
       .limit(Number(limit));
 
@@ -1843,8 +1966,7 @@ const getSearchPaymentHistory = async (req, res) => {
       success: false,
     });
   }
-
-}
+};
 
 const getFilterPaymentHistory = async (req, res) => {
   try {
@@ -1854,7 +1976,7 @@ const getFilterPaymentHistory = async (req, res) => {
     const pipeline = [
       {
         $match: { userId: Mongoose.Types.ObjectId(req._user) },
-      }
+      },
     ];
 
     if (paymentStatus) {
@@ -1870,7 +1992,7 @@ const getFilterPaymentHistory = async (req, res) => {
 
       pipeline.push({
         $match: {
-          createdAt: { $gte: adjustedStartDate, $lte: adjustedEndDate }
+          createdAt: { $gte: adjustedStartDate, $lte: adjustedEndDate },
         },
       });
     } else if (startDate) {
@@ -1880,7 +2002,7 @@ const getFilterPaymentHistory = async (req, res) => {
 
       pipeline.push({
         $match: {
-          createdAt: { $gte: adjustedStartDate, $lt: adjustedEndDate }
+          createdAt: { $gte: adjustedStartDate, $lt: adjustedEndDate },
         },
       });
     } else if (endDate) {
@@ -1889,20 +2011,19 @@ const getFilterPaymentHistory = async (req, res) => {
 
       pipeline.push({
         $match: {
-          createdAt: { $lte: adjustedEndDate }
+          createdAt: { $lte: adjustedEndDate },
         },
       });
     }
 
-    if (text !== 'undefined') {
-      const regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    if (text !== "undefined") {
+      const regex = new RegExp(
+        text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        "i"
+      );
       pipeline.push({
-        $match:  { 
-          $or: [
-            { name: regex }, 
-            { email: regex } ,
-            { invoiceNumber: regex } ,
-          ]
+        $match: {
+          $or: [{ name: regex }, { email: regex }, { invoiceNumber: regex }],
         },
       });
     }
@@ -1914,7 +2035,7 @@ const getFilterPaymentHistory = async (req, res) => {
     }
 
     pipeline.push({
-      $sort: { createdAt: -1 }
+      $sort: { createdAt: -1 },
     });
 
     const paymentData = await paymentCollection.aggregate(pipeline);
@@ -1924,7 +2045,6 @@ const getFilterPaymentHistory = async (req, res) => {
       message: "Payment Data fetched",
       data: paymentData,
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -1945,13 +2065,14 @@ const UpdateStatus = async (req, res) => {
     if (updateStatus) {
       res.json({ success: true, updatedPayment: updateStatus, status: 200 });
     } else {
-      res.status(404).json({ success: false, error: 'Payment not found', status: 404 });
+      res
+        .status(404)
+        .json({ success: false, error: "Payment not found", status: 404 });
     }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-
 
 const customizeData = async (req, res) => {
   try {
@@ -1976,16 +2097,16 @@ const customizeData = async (req, res) => {
   }
 };
 
-
 const addCard = async (req, res) => {
   try {
-    const { cardId, month, year, tokenCard, last4Digits, userId, email, name } = req.body;
+    const { cardId, month, year, tokenCard, last4Digits, userId, email, name } =
+      req.body;
 
     const salonOwner = await userCollection.findById(userId);
 
     const stripeInstance = stripe(salonOwner.secretKey);
 
-    let customerId = ""
+    let customerId = "";
     const customers = await stripeInstance.customers.list({
       email: email,
     });
@@ -2000,7 +2121,14 @@ const addCard = async (req, res) => {
       customerId = customers.data[0].id;
     }
 
-    if (!customerId || !cardId || !month || !year || !tokenCard || !last4Digits) {
+    if (
+      !customerId ||
+      !cardId ||
+      !month ||
+      !year ||
+      !tokenCard ||
+      !last4Digits
+    ) {
       return res.status(400).json({
         success: false,
         message: "customer id & card details are required to be filled",
@@ -2014,10 +2142,12 @@ const addCard = async (req, res) => {
       },
     });
 
-    const attachcard = await stripeInstance.paymentMethods.attach(paymentMethod.id, {
-      customer: customerId,
-    });
-
+    const attachcard = await stripeInstance.paymentMethods.attach(
+      paymentMethod.id,
+      {
+        customer: customerId,
+      }
+    );
 
     return res.status(200).json({
       success: true,
@@ -2040,7 +2170,7 @@ const getPaymentById = async (req, res) => {
 
     const paymentData = await paymentCollection.find({
       userId: userId,
-      _id: paymentCollectionId
+      _id: paymentCollectionId,
     });
 
     return res.status(200).json({
@@ -2048,7 +2178,6 @@ const getPaymentById = async (req, res) => {
       data: paymentData,
       status: 200,
     });
-
   } catch (error) {
     return res.status(500).json({
       message: "Internal Server Error",
@@ -2059,7 +2188,10 @@ const getPaymentById = async (req, res) => {
 
 const getCountryCode = async (req, res) => {
   try {
-    const myCountryCodesObject = countryCodes.customList('countryCode', ' +{countryCallingCode}')
+    const myCountryCodesObject = countryCodes.customList(
+      "countryCode",
+      " +{countryCallingCode}"
+    );
     return res.status(200).json({
       message: "Country Data fetched",
       data: myCountryCodesObject,
@@ -2070,13 +2202,13 @@ const getCountryCode = async (req, res) => {
       .status(200)
       .json({ status: 401, success: false, message: error.message });
   }
-}
+};
 
 const getAllInventory = async (req, res) => {
   try {
     const { userId } = req.body;
     const response = await inventoryCollection.aggregate([
-      { $match: { userId: mongoose.Types.ObjectId(userId) , isDeleted : false } },
+      { $match: { userId: mongoose.Types.ObjectId(userId), isDeleted: false } },
       {
         $lookup: {
           from: "businessService",
@@ -2085,7 +2217,7 @@ const getAllInventory = async (req, res) => {
           as: "service",
         },
       },
-    
+
       { $sort: { name: -1 } },
       {
         $facet: {
@@ -2107,29 +2239,297 @@ const getAllInventory = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
 const getSingleInventory = async (req, res) => {
   try {
-      const { id } = req.params;
-      const response = await inventoryCollection.findOne({_id:id}).populate("service")
-      if (!response) {
-        return res.status(200).json({
-          message: "Data not found",
-          status: 404,
-        });
-      } else {
-        return res.status(200).json({
-          message: "Data get successfully",
-          data: response,
-          totalCount: response.length,
-        });
-      }
-    } catch (error) {
-      console.log(error);
+    const { id } = req.params;
+    const response = await inventoryCollection
+      .findOne({ _id: id })
+      .populate("service");
+    if (!response) {
+      return res.status(200).json({
+        message: "Data not found",
+        status: 404,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Data get successfully",
+        data: response,
+        totalCount: response.length,
+      });
     }
-}
+  } catch (error) {
+    console.log(error);
+  }
+};
 
+const getBusinessClasses = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const response = await businessClassService.getClassById(userId);
+    if (!response) {
+      return res.status(200).json({
+        message: "Data not found",
+        status: 404,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Data get successfully",
+        data: response,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const createMultipleProducts = async (req, res) => {
+  try {
+    const { userId, name, email, products, paymentType } = req.body;
+    const productsList = await inventoryCollection.find({
+      _id: { $in: products?.map((item) => item?.productId) },
+    });
+    const productsDescription = productsList
+      ?.map((item) => `${item?.name}`)
+      .join(", ");
+    const salonOwner = await userCollection.findById(userId);
+    if (salonOwner?.isActivateAccount == true) {
+      return res.status(400).json({
+        success: true,
+        message: "Link is Expired",
+        status: 400,
+      });
+    }
+
+    const exist = await customerCollection.findOne({
+      email: email?.toLowerCase(),
+      userId: Mongoose.Types.ObjectId(userId),
+    });
+
+    if (exist) {
+      const productData = await Promise.all(
+        products.map(async (item) => {
+          const inventory = await inventoryService.getInventoryById(
+            item?.productId
+          );
+          const updatedStock = inventory?.productstock - item?.quantity;
+          await inventoryService.update(item?.productId, {
+            productstock: updatedStock,
+          });
+          return {
+            addedBy: userId,
+            userId: exist?._id,
+            inventoryId: item?.productId,
+            price: item?.price,
+            quantity: item?.quantity,
+          };
+        })
+      );
+      const createdProducts = await productService.createMultiple(productData);
+
+      sendProductBookingOwner(
+        name,
+        salonOwner?.email,
+        salonOwner?.firstName,
+        productsDescription
+      );
+
+      let notification = {
+        title: "You’ve Made Sales",
+        text: `Cha-ching $! Your closer to your revenue goal! <strong>${name}</strong> just ordered <strong>${productsDescription}</strong> from your store. Do your happy dance!! Remember, they could have gone to someone else.`,
+        clientName: name,
+        type: "Product",
+        bookedBy: userId,
+        customerId: exist?._id,
+        fcmToken: salonOwner?.fcmToken,
+      };
+      await createNotification(notification);
+
+      const countryCode = exist?.selectedCountry?.split(" ")[1];
+      if (exist?.phoneNumber) {
+        let smsData = {
+          to: `${countryCode}${exist?.phoneNumber}`,
+          text: "Your Product order is confirmed.",
+        };
+
+        await smtpSms(smsData);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Products added successfully",
+        data: createdProducts,
+      });
+    } else {
+      const newCustomer = {
+        name: name,
+        email: email?.toLowerCase(),
+        userId: userId,
+        paymentType: paymentType,
+      };
+
+      const createCustomer = await customerService.post(newCustomer);
+      let notification3 = {
+        title: "Your Business is Growing",
+        text: `Your client list is growing!! <strong>${createCustomer?.name}</strong> has been added to your client database. Be sure to greet them with a smile when they arrive!! Remember, they could have gone to someone else.`,
+        type: "User",
+        clientName: createCustomer?.name,
+        bookingFor: createCustomer?._id,
+        customerId: createCustomer?._id,
+        bookedBy: userId,
+        fcmToken: salonOwner?.fcmToken,
+      };
+      await createNotification(notification3);
+      const productData = await Promise.all(
+        products.map(async (item) => {
+          const inventory = await inventoryService.getInventoryById(
+            item?.productId
+          );
+          const updatedStock = inventory?.productstock - item?.quantity;
+          await inventoryService.update(item?.productId, {
+            productstock: updatedStock,
+          });
+          return {
+            addedBy: userId,
+            userId: createCustomer?._id,
+            inventoryId: item?.productId,
+            price: item?.price,
+            quantity: item?.quantity,
+          };
+        })
+      );
+      const createdProducts = await productService.createMultiple(productData);
+
+      sendProductBookingOwner(
+        name,
+        salonOwner?.email,
+        salonOwner?.firstName,
+        productsDescription
+      );
+
+      let notification = {
+        title: "You’ve Made Sales",
+        text: `Cha-ching $! Your closer to your revenue goal! <strong>${createCustomer?.name}</strong> just bought <strong>${productsDescription}</strong> from your store. Do your happy dance!! Remember, they could have gone to someone else.`,
+        clientName: createCustomer?.name,
+        type: "Product",
+        bookedBy: userId,
+        customerId: createCustomer?._id,
+        fcmToken: salonOwner?.fcmToken,
+      };
+      await createNotification(notification);
+
+      return res.status(200).json({
+        success: true,
+        message: "Products added successfully",
+        data: createdProducts,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
+const handleProductsPayment = async (req, res) => {
+  try {
+    const {
+      paymentMethodId,
+      userId,
+      name,
+      email,
+      products,
+      customerId,
+      totalPrice,
+    } = req.body;
+    const productsList = await inventoryCollection.find({
+      _id: { $in: products },
+    });
+    const productsDescription = productsList
+      ?.map((item) => `${item?.name}`)
+      .join(", ");
+
+    const salonOwner = await userCollection.findById(userId);
+
+    const stripeInstance = stripe(salonOwner?.secretKey);
+    const stripeProducts = await stripeInstance.products.list();
+    let stripeProduct = stripeProducts.data.find((p) => p.name === "Bisi");
+    if (!stripeProduct) {
+      stripeProduct = await stripeInstance.products.create({
+        name: "Bisi",
+      });
+    }
+    const price = await stripeInstance.prices.create({
+      product: stripeProduct.id,
+      unit_amount: totalPrice * 100,
+      currency: "usd",
+    });
+
+    const paymentIntent = await stripeInstance.paymentIntents.create({
+      amount: totalPrice * 100,
+      customer: customerId,
+      payment_method: paymentMethodId,
+      metadata: {
+        product_id: stripeProduct.id,
+      },
+      currency: "usd",
+    });
+    const paymentConfirm = await stripeInstance.paymentIntents.confirm(
+      paymentIntent.id
+    );
+    await stripeInstance.paymentIntents.retrieve(paymentIntent.id);
+    const invoice = await stripeInstance.invoices.create({
+      customer: customerId,
+      currency: "usd",
+    });
+    await stripeInstance.invoiceItems.create({
+      customer: customerId,
+      price: price.id,
+      invoice: invoice.id,
+    });
+
+    const paymentDate = new Date();
+    const [date, time] = paymentDate.toISOString()?.split("T");
+    const paymentTime = time.slice(0, 5);
+    const invoiceId = invoice.id;
+    sendProductPaymentMail(
+      name,
+      email,
+      invoiceId,
+      productsDescription,
+      totalPrice,
+      date,
+      paymentTime
+    );
+    const obj = {
+      name: name,
+      email: email,
+      paymentIntent: paymentIntent.id,
+      invoiceNumber: invoice.id,
+      paymentStatus: paymentConfirm.status,
+      amount: paymentIntent.amount / 100,
+      paymentMthod: paymentMethodId,
+      bookedBy: userId,
+      userId,
+    };
+
+    paymentCollection.create(obj);
+
+    return res.status(200).json({
+      success: true,
+      clientSecret: paymentIntent?.client_secret,
+      price: obj.amount,
+      status: 200,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
 
 module.exports = {
   createUser,
@@ -2172,4 +2572,7 @@ module.exports = {
   deleteHistory,
   getAllInventory,
   getSingleInventory,
+  getBusinessClasses,
+  createMultipleProducts,
+  handleProductsPayment,
 };

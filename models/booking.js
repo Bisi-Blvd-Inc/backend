@@ -9,10 +9,18 @@ var BookingSchema = new Schema(
     name: { type: String },
     email: { type: String },
     service: [{ type: Schema.Types.ObjectId, ref: "businessService" }],
+    classes: [{ type: Schema.Types.ObjectId, ref: "businessClass" }],
+    serviceType: {
+      type: String,
+      enum: ["Service", "Class"],
+      default: "Service",
+    },
+    numberOfSeats: { type: Number, default: 1 },
+    products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     benificialName: { type: String },
     benificialEmail: { type: String },
-    selectedCountry:{type:String},
-    selectedBenificialCountry:{type:String},
+    selectedCountry: { type: String },
+    selectedBenificialCountry: { type: String },
     benificialPhone: { type: String },
     isDeleted: { type: Boolean, default: false },
     eventColor: {
@@ -32,7 +40,7 @@ var BookingSchema = new Schema(
     },
     bookingStatus: {
       type: String,
-      enum: ["Confirmed","Completed" ,"Cancelled"],
+      enum: ["Confirmed", "Completed", "Cancelled"],
       default: "Confirmed",
     },
     userId: { type: Schema.Types.ObjectId, ref: "User" },
@@ -66,7 +74,7 @@ var BookingSchema = new Schema(
     checkinDate: { type: Date },
     customerId: { type: Schema.Types.ObjectId, ref: "Customer" },
     bookingFor: { type: Schema.Types.ObjectId, ref: "Customer" },
-    scheduleexist :{ type: Boolean, default: false }
+    scheduleexist: { type: Boolean, default: false },
   },
   {
     timestamps: { createdAt: true, updatedAt: true },

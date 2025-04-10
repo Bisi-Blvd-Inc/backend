@@ -12,7 +12,9 @@ router.post("/Deletedhistory", authMiddleware, userController.deleteHistory);
 
 
 router.post("/createBooking",  userController.createExternalBooking);
+router.post("/createProducts", userController.createMultipleProducts)
 router.post("/bookingPayment",  userController.ExternalBookingPayment);
+router.post("/productPayment", userController.handleProductsPayment);
 router.get("/get/:pageNo/:limit", authMiddleware, userController.getUser);
 router.get("/stripe-signup-plans", userController.getStripeSignupPlans);
 router.get("/stripe-plans-prices", userController.getStripePriceList);
@@ -48,6 +50,7 @@ router.get("/countryCode", userController.getCountryCode);
 router.get("/searchPayment",authMiddleware,userController.getSearchPaymentHistory)
 router.post("/getAllInventory", userController.getAllInventory);
 router.get("/getInventory/:id", userController.getSingleInventory);
+router.post("/getBusinessClasses", userController.getBusinessClasses);
 
 
 module.exports = router;
