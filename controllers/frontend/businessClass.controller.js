@@ -26,6 +26,7 @@ const create = async (req, res) => {
       difficultyLevel,
       location,
       isReoccurring,
+      reoccurringDays,
       startTime,
       endTime,
       addedBy: req._user,
