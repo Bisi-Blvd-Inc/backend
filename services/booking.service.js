@@ -72,6 +72,22 @@ const find = (condition) => {
           as: "service",
         },
       },
+      {
+        $lookup: {
+          from: "businessClass",
+          localField: "classes",
+          foreignField: "_id",
+          as: "classes",
+        },
+      },
+      {
+        $lookup: {
+          from: "Product",
+          localField: "products",
+          foreignField: "_id",
+          as: "products",
+        },
+      },
     ],
   ]);
 };
@@ -86,8 +102,22 @@ const GetAllListwithLimit = (condition) => {
         as: "service",
       },
     },
-
-
+    {
+      $lookup: {
+        from: "businessClass",
+        localField: "classes",
+        foreignField: "_id",
+        as: "classes",
+      },
+    },
+    {
+      $lookup: {
+        from: "Product",
+        localField: "products",
+        foreignField: "_id",
+        as: "products",
+      },
+    },
 
     { $sort: { name: -1 } },
     {
@@ -110,6 +140,22 @@ const allConfirmedBooking = (condition) => {
         as: "service",
       },
     },
+    {
+      $lookup: {
+        from: "businessClass",
+        localField: "classes",
+        foreignField: "_id",
+        as: "classes",
+      },
+    },
+    {
+      $lookup: {
+        from: "Product",
+        localField: "products",
+        foreignField: "_id",
+        as: "products",
+      },
+    },
 
     { $sort: { name: -1 } },
     {
@@ -130,6 +176,22 @@ const getBooingWithDate = async (userId, startDate, endDate) => {
         localField: "service",
         foreignField: "_id",
         as: "service",
+      },
+    },
+    {
+      $lookup: {
+        from: "businessClass",
+        localField: "classes",
+        foreignField: "_id",
+        as: "classes",
+      },
+    },
+    {
+      $lookup: {
+        from: "Product",
+        localField: "products",
+        foreignField: "_id",
+        as: "products",
       },
     },
 

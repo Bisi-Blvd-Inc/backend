@@ -24,8 +24,9 @@ var businessClassSchema = new Schema(
     isReoccurring: { type: Boolean, default: false },
     reoccurringDays: {
       type: String,
-      enum: ["Weekly", "Monthly", "Yearly"],
+      enum: ["Daily", "Weekly", "Monthly"],
     },
+    reoccurringEndDate: { type: Date },
     isDeleted: { type: Boolean, default: false },
     addedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },

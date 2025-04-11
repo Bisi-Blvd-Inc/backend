@@ -13,6 +13,7 @@ const create = async (req, res) => {
       location,
       isReoccurring,
       reoccurringDays,
+      reoccurringEndDate,
       startTime,
       endTime,
     } = req.body;
@@ -27,6 +28,7 @@ const create = async (req, res) => {
       location,
       isReoccurring,
       reoccurringDays,
+      reoccurringEndDate,
       startTime,
       endTime,
       addedBy: req._user,
