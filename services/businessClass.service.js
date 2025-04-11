@@ -9,11 +9,13 @@ const getClass = (pageNo, limit) => {
     .sort({ _id: -1 });
 };
 const getClassById = (id) => {
-  return businessClassCollection.find({ isDeleted: false, addedBy: id });
+  return businessClassCollection
+    .find({ isDeleted: false, addedBy: id })
+    .sort({ updatedAt: -1, createdAt: -1 });
 };
 const updateById = (condition, obj) => {
   return businessClassCollection.findByIdAndUpdate(condition, obj);
-}
+};
 const getClassSearch = (pageNo, limit, text) => {
   return businessClassCollection
     .find({
@@ -34,4 +36,4 @@ module.exports = {
   updateById,
   getClassById,
   deleteById,
-}
+};
