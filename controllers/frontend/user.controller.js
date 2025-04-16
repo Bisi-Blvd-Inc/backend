@@ -2344,7 +2344,7 @@ const createMultipleProducts = async (req, res) => {
         customerId: exist?._id,
         fcmToken: salonOwner?.fcmToken,
       };
-      // await createNotification(notification);
+      await createNotification(notification);
 
       const countryCode = exist?.selectedCountry?.split(" ")[1];
       if (exist?.phoneNumber) {
@@ -2380,7 +2380,7 @@ const createMultipleProducts = async (req, res) => {
         bookedBy: userId,
         fcmToken: salonOwner?.fcmToken,
       };
-      // await createNotification(notification3);
+      await createNotification(notification3);
       const productData = await Promise.all(
         products.map(async (item) => {
           const inventory = await inventoryService.getInventoryById(
@@ -2417,7 +2417,7 @@ const createMultipleProducts = async (req, res) => {
         customerId: createCustomer?._id,
         fcmToken: salonOwner?.fcmToken,
       };
-      // await createNotification(notification);
+      await createNotification(notification);
 
       return res.status(200).json({
         success: true,
