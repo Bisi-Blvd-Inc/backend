@@ -5,9 +5,12 @@ require("dotenv").config();
 
 const createNotification = async (notification, res) => {
   const nn = await Notification.create(notification);
+  const fcmTokens = Array.isArray(notification?.fcmToken)
+    ? notification?.fcmToken
+    : [];
 
-  for (let i = 0; i < notification?.fcmToken?.length; i++) {
-    const fcmToken = notification?.fcmToken[i];
+  for (let i = 0; i < fcmTokens.length; i++) {
+    const fcmToken = fcmTokens[i];
 
     if (fcmToken !== null) {
       const options = {
@@ -25,33 +28,37 @@ const createAdminNotification = async (notification, res) => {
 };
 
 const sendNotification = async (options) => {
-  const { title, text, clientName, fcmToken, messaging_token } = options;
-  let notification_payload = {
-    to: fcmToken,
-    notification: {
-      title: title,
-      clientName: clientName,
-    },
-    webpush: {
-      fcm_options: {
-        link: process.env.FRONT_BASE_URL,
+  try {
+    const { title, text, clientName, fcmToken, messaging_token } = options;
+    let notification_payload = {
+      to: fcmToken,
+      notification: {
+        title: title,
+        clientName: clientName,
       },
-    },
-  };
+      webpush: {
+        fcm_options: {
+          link: process.env.FRONT_BASE_URL,
+        },
+      },
+    };
 
-  const config = {
-    headers: {
-      Authorization: `Bearer ${process.env.FCM_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-  };
+    const config = {
+      headers: {
+        Authorization: `Bearer ${process.env.FCM_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    };
 
-  const res = await axios.post(
-    "https://fcm.googleapis.com/fcm/send",
-    notification_payload,
-    config
-  );
-
+    const res = await axios.post(
+      "https://fcm.googleapis.com/fcm/send",
+      notification_payload,
+      config
+    );
+    console.log("Notification sent:", res?.data);
+  } catch (error) {
+    console.error("FCM notification failed: ", error);
+  }
 };
 
 const sendAdminNotification = async (options, next) => {
