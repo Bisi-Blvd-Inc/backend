@@ -905,7 +905,7 @@ const createExternalBooking = async (req, res) => {
         };
 
         await createNotification(notification);
-        const countryCode = selectedCountry.split(" ")[1];
+        const countryCode = selectedCountry?.split(" ")[1];
 
         if (createdBooking?.phoneNumber?.length > 0) {
           let smsData = {
@@ -1007,7 +1007,7 @@ const createExternalBooking = async (req, res) => {
               fcmToken: getToken.fcmToken,
             };
             await createNotification(notification);
-            const countryCode = selectedCountry.split(" ")[1];
+            const countryCode = selectedCountry?.split(" ")[1];
             let smsData = {
               to: `${countryCode}${createdBooking.phoneNumber}`,
               text: "Your Booked Service Appointment is confirmed.",
@@ -1137,7 +1137,7 @@ const createExternalBooking = async (req, res) => {
 
             await createNotification(notification1);
 
-            const countryCode = createdBooking.selectedCountry.split(" ")[1];
+            const countryCode = createdBooking.selectedCountry?.split(" ")[1];
             let smsData = {
               to: `${countryCode}${createdBooking.phoneNumber}`,
               text: "Your Booked Service Appointment is confirmed.",
@@ -1326,7 +1326,7 @@ const createExternalBooking = async (req, res) => {
 
         await createNotification(notification4);
 
-        const countryCode = selectedCountry.split(" ")[1];
+        const countryCode = selectedCountry?.split(" ")[1];
         if (createdBooking?.phoneNumber?.length > 0) {
           let smsData = {
             to: `${countryCode}${createdBooking.phoneNumber}`,
@@ -1454,7 +1454,7 @@ const createExternalBooking = async (req, res) => {
             };
             await createNotification(notification6);
 
-            const countryCode = selectedCountry.split(" ")[1];
+            const countryCode = selectedCountry?.split(" ")[1];
             let smsData2 = {
               to: `${countryCode}${createdBooking.phoneNumber}`,
               text: "Your Booked Service Appointment is confirmed.",
@@ -1610,7 +1610,7 @@ const createExternalBooking = async (req, res) => {
           };
           await createNotification(notification9);
 
-          const countryCode = selectedCountry.split(" ")[1];
+          const countryCode = selectedCountry?.split(" ")[1];
           let smsData2 = {
             to: `${countryCode}${createdBooking.phoneNumber}`,
             text: "Your Booked Service Appointment is confirmed.",
