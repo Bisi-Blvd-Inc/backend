@@ -5,7 +5,7 @@ const get = (pageNo, limit) => {
     .find({ role: 2 })
     .skip(parseInt(pageNo - 1) * limit)
     .limit(limit)
-    .sort({ createdAt: 1 })
+    .sort({ createdAt: -1 })
 };  
 const update = (condition, payload) => {
   return userCollection.findByIdAndUpdate(condition, payload);
@@ -29,7 +29,7 @@ const getUsersBySearch = (text, pageNo, limit) => {
     
     .skip(parseInt(pageNo - 1) * limit)
     .limit(limit)
-    .sort({ createdAt: 1 })
+    .sort({ createdAt: -1 })
     .populate("businessType");
 };
 
@@ -37,7 +37,7 @@ const remove = (condition) => userCollection.findByIdAndDelete(condition);
 const post = (payload) => userCollection.create(payload);
 const getAllUser = () => {
   return userCollection.find({ role: 2, isDeleted: false })
-  .sort({ createdAt: 1 });
+  .sort({ createdAt: -1 });
 };
 
 module.exports = {
