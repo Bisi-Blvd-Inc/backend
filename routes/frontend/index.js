@@ -23,6 +23,7 @@ const notesRouter = require("./notes.router");
 const userfilesRouter  =  require("./userfileupload.router");
 const  giftCertificateList  = require("./giftCertificate.router");
 const businessClassRouter = require("./businessClass.router");
+const enterpriseRouter = require("./enterprise.router")
 
 const router = express.Router();
 
@@ -51,7 +52,7 @@ router.use("/notes", authMiddleware, notesRouter);
 router.use("/filesUpload", authMiddleware, userfilesRouter );
 router.use("/giftCertificate", authMiddleware, giftCertificateList );
 router.use("/businessClass", authMiddleware, businessClassRouter);
-
+router.use("/enterprise", enterpriseRouter);
 
 
 

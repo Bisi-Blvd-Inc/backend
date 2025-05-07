@@ -59,7 +59,8 @@ var userSchema = new Schema(
     paymentStatus: { type: Number , default: 0 },
     isActivateAccount: { type: Boolean, default: false },
     HistoryActivateStatus : { type: Boolean, default: true },
-    DeactivateAccountDate : { type: String}
+    DeactivateAccountDate : { type: String},
+    withEnterprise: { type: Boolean, default: false },
   },
 
   { collection: "users", timestamps: { createdAt: true, updatedAt: true } }
