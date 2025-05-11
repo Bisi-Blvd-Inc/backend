@@ -1,4 +1,5 @@
 const enterpriseService = require("../../services/enterprise.service");
+const enterpriseCollection = require("../../models/enterprise")
 
 const createEnterprise = async (req, res) => {
   try {
@@ -57,13 +58,21 @@ const deleteEnterprise = async (req, res) => {
   }
 };
 
-const getAllEnterprises = async (req, res) => {
+const getWithPagination = async (req, res) => {
   try {
-    const enterprises = await enterpriseService.getAllEnterprises();
+    let { pageNo, limit } = req.params;
+    const enterprises = await enterpriseService.get(
+      Number(pageNo),
+      Number(limit)
+    );
+
+    const count = enterpriseCollection.countDocuments();
+
     return res.status(200).json({
       message: "Enterprises fetched successfully",
       success: true,
       data: enterprises,
+      count: count,
     });
   } catch (err) {
     return res.status(500).json({
@@ -98,8 +107,8 @@ const getEnterpriseById = async (req, res) => {
 
 module.exports = {
   createEnterprise,
-  getAllEnterprises,
+  getWithPagination,
   getEnterpriseById,
   updateEnterprise,
-  deleteEnterprise
+  deleteEnterprise,
 };
