@@ -31,10 +31,12 @@ const addUserToEnterprise = async (enterpriseKey, userId) => {
   );
 };
 
-const getAllEnterprises = async () => {
+const get = async (pageNo, limit) => {
   return await EnterpriseCollection.find()
-    .populate("businessType users")
-    .sort({ updatedAt: -1, createdAt: -1 });
+    .skip(parseInt(pageNo - 1) * limit)
+    .limit(limit)
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .populate("businessType users");
 };
 
 const getEnterpriseById = async (id) => {
@@ -45,7 +47,7 @@ module.exports = {
   createEnterprise,
   getEnterpriseByUserId,
   addUserToEnterprise,
-  getAllEnterprises,
+  get,
   getEnterpriseById,
   updateById,
   deleteById,
