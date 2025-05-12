@@ -4,7 +4,7 @@ const enterpriseController = require("../../controllers/admin/enterprise.control
 
 router.post("/create", enterpriseController.createEnterprise);
 router.get("/get/:pageNo/:limit", enterpriseController.getWithPagination);
-router.get("/get/:id", enterpriseController.getEnterpriseById);
+router.get("/getById/:id", enterpriseController.getEnterpriseById);
 router.put("/update/:id", enterpriseController.updateEnterprise);
 router.delete("/delete/:id", enterpriseController.deleteEnterprise);
 
