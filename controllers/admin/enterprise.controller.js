@@ -66,7 +66,7 @@ const getWithPagination = async (req, res) => {
       Number(limit)
     );
 
-    const count = enterpriseCollection.countDocuments();
+    const count = await enterpriseCollection.countDocuments();
 
     return res.status(200).json({
       message: "Enterprises fetched successfully",
