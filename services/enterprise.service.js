@@ -35,7 +35,7 @@ const get = async (pageNo, limit) => {
   return await EnterpriseCollection.find()
     .skip(parseInt(pageNo - 1) * limit)
     .limit(limit)
-    .sort({ updatedAt: -1, createdAt: -1 })
+    .sort({ createdAt: -1 })
     .populate("businessType users");
 };
 
