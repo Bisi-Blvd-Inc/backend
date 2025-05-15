@@ -16,11 +16,15 @@ const deleteById = async (id) => {
 };
 
 const getEnterpriseByUserId = async (userId) => {
-  return await EnterpriseCollection.findOne({ users: userId });
+  return await EnterpriseCollection.findOne({ users: userId }).select(
+    "-users -licenses"
+  );
 };
 
 const getEnterpriseByKey = async (key) => {
-  return await Enterprise.findOne({ enterpriseKey: key });
+  return await EnterpriseCollection.findOne({ enterpriseKey: key }).select(
+    "-users -licenses"
+  );
 };
 
 const addUserToEnterprise = async (enterpriseKey, userId) => {
