@@ -5,7 +5,7 @@ const { authMiddleware } = require("../../middlewares/frontend/authMiddleware");
 
 router.post("/join", enterpriseController.joinEnterprise);
 router.get(
-  "/getById",
+  "/getById/:id",
   authMiddleware,
   enterpriseController.getEnterpriseByUserId
 );
