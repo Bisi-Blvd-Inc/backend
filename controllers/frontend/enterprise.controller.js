@@ -28,7 +28,9 @@ const joinEnterprise = async (req, res) => {
 
 const getEnterpriseByUserId = async (req, res) => {
   try {
-    const enterprise = await enterpriseService.getEnterpriseByUserId(req._user);
+    const enterprise = await enterpriseService.getEnterpriseByUserId(
+      req.params.id
+    );
     if (!enterprise) {
       return res
         .status(404)
