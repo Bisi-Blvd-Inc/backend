@@ -1,28 +1,35 @@
 const enterpriseService = require("../../services/enterprise.service");
+const Enterprise = require("../../models/enterprise");
 
 const joinEnterprise = async (req, res) => {
-  const { enterpriseKey, userId } = req.body;
   try {
-    const updated = await enterpriseService.addUserToEnterprise(
-      enterpriseKey,
-      userId
-    );
-    if (!updated) {
+    const { key, userId } = req.body;
+
+    const enterprise = await Enterprise.findOne({
+      "userKeys.key": key,
+      "userKeys.user": { $exists: false },
+    });
+
+    if (!enterprise) {
       return res
-        .status(404)
-        .json({ error: "Invalid enterprise key", success: false });
+        .status(400)
+        .json({ success: false, message: "Invalid or already used key" });
     }
+
+    const updated = await Enterprise.updateOne(
+      { _id: enterprise._id, "userKeys.key": key },
+      { $set: { "userKeys.$.user": userId } }
+    );
+
     return res.status(200).json({
-      message: "Enterprise joined successfully",
       success: true,
+      message: "User assigned to enterprise",
       data: updated,
     });
   } catch (err) {
-    return res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message,
-      success: false,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Server Error", error: err.message });
   }
 };
 
@@ -56,9 +63,7 @@ const getEnterpriseByKey = async (req, res) => {
       req.params.key
     );
     if (!enterprise) {
-      return res
-        .status(404)
-        .json({ error: "Enterprise not found for this user" });
+      return res.status(404).json({ error: "Invalid or already used code" });
     }
     return res.status(200).json({
       message: "Enterprise fetched successfully",
