@@ -29,6 +29,7 @@
     "fs": "^0.0.1-security",
     "google-auth-library": "^8.6.0",
     "isodate": "^0.1.4",
+    "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^8.5.1",
     "loadash": "^1.0.0",
     "lodash": "^4.17.21",
