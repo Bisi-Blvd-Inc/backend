@@ -10,9 +10,13 @@ const enterpriseSchema = new Schema(
     headquarters: { type: String },
     enterpriseSource: { type: String },
     businessType: [{ type: Schema.Types.ObjectId, ref: "Business" }],
-    users: [{ type: Schema.Types.ObjectId, ref: "User" }],
     licenses: { type: Number, required: true },
-    enterpriseKey: { type: String, unique: true, required: true },
+    userKeys: [
+      {
+        key: { type: String, required: true },
+        user: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      },
+    ],
   },
   {
     collection: "Enterprise",
