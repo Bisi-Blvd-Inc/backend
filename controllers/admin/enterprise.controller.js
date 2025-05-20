@@ -164,9 +164,9 @@ const exportEnterpriseKeysCsv = async (req, res) => {
 
     const exportData = enterprise.userKeys.map((entry) => ({
       Key: entry.key,
-      FirstName: entry.user?.firstName || "",
-      LastName: entry.user?.lastName || "",
-      Email: entry.user?.email || "",
+      FirstName: entry.user?.firstName || "-",
+      LastName: entry.user?.lastName || "-",
+      Email: entry.user?.email || "-",
     }));
 
     const fields = ["Key", "FirstName", "LastName", "Email"];

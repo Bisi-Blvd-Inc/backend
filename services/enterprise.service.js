@@ -49,7 +49,7 @@ const deleteEnterpriseKey = async (key) => {
 
   let userDeleted = false;
   if (userId) {
-    const response = await userCollection.updateOne(
+    const response = await UserCollection.updateOne(
       { _id: userId, role: 2 },
       { $set: { isDeleted: true } }
     );
@@ -72,10 +72,10 @@ const getEnterpriseByUserId = async (userId) => {
 };
 
 const getEnterpriseByKey = async (key) => {
-  await Enterprise.findOne({
+  await EnterpriseCollection.findOne({
     "userKeys.key": key,
     "userKeys.user": { $exists: false },
-  }).select("enterpriseName _id");
+  }).select("enterpriseName _id businessType");
 };
 
 const get = async (pageNo, limit) => {
