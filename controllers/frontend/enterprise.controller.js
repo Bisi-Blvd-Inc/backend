@@ -6,8 +6,12 @@ const joinEnterprise = async (req, res) => {
     const { key, userId } = req.body;
 
     const enterprise = await Enterprise.findOne({
-      "userKeys.key": key,
-      "userKeys.user": { $exists: false },
+      userKeys: {
+        $elemMatch: {
+          key: key,
+          user: null,
+        },
+      },
     });
 
     if (!enterprise) {
