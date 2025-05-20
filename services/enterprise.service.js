@@ -72,9 +72,13 @@ const getEnterpriseByUserId = async (userId) => {
 };
 
 const getEnterpriseByKey = async (key) => {
-  await EnterpriseCollection.findOne({
-    "userKeys.key": key,
-    "userKeys.user": { $exists: false },
+  return await EnterpriseCollection.findOne({
+    userKeys: {
+      $elemMatch: {
+        key: key,
+        user: null,
+      },
+    },
   }).select("enterpriseName _id businessType");
 };
 
