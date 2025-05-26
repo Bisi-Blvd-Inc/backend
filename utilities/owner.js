@@ -3,7 +3,6 @@ require("dotenv").config();
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-
 module.exports.sendOwnerMailer = (data) => {
   const msg = {
     to: data.email,
@@ -23,4 +22,3 @@ module.exports.sendOwnerMailer = (data) => {
     }
   })();
 };
-
