@@ -4,12 +4,11 @@ const jwt = require("jsonwebtoken");
 const ejs = require("ejs");
 var path = require("path");
 const mail = require("../utilities/mail");
-const owner = require("../utilities/owner")
+const owner = require("../utilities/owner");
 const { find } = require("lodash");
-const { smtpSms } = require("../helpers/twilio")
-const htmlParser = require('node-html-parser');
+const { smtpSms } = require("../helpers/twilio");
+const htmlParser = require("node-html-parser");
 require("dotenv").config();
-
 
 const AdminUrl = process.env.ADMIN_BASE_URL;
 
@@ -77,8 +76,6 @@ const sendActivationMail = async (email) => {
   }
 };
 
-
-
 const returnAccountActivationMail = async (email) => {
   try {
     const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
@@ -100,9 +97,7 @@ const returnAccountActivationMail = async (email) => {
   }
 };
 
-const sendstaffMail = async (email,
-  name,
-  staffId) => {
+const sendstaffMail = async (email, name, staffId) => {
   try {
     const emailData = {
       email,
@@ -120,21 +115,21 @@ const sendstaffMail = async (email,
   }
 };
 
-
 const sendNewuserCreated = async (firstName, resultsArray) => {
-
   try {
     const emailData = {
-      email: "admin@bisiblvd.com.",
+      email: "admin@bisiblvd.com",
       subject: `New Subscriber added`,
       html: `
           <p>Dear Noelle <p>
           <p> 
-          A new subscriber <b style="color:green;">  ${firstName} </b> recently joined our community under <b style="color:green;"> ${resultsArray.map(data => data.businessType).join(', ')} </b>. Click here ${AdminUrl}/users to check more.</p>
+          A new subscriber <b style="color:green;">  ${firstName} </b> recently joined our community under <b style="color:green;"> ${resultsArray
+        .map((data) => data.businessType)
+        .join(", ")} </b>. Click here ${AdminUrl}/users to check more.</p>
           <hr />
           <p>This email may contain sensitive information</p>
           <p></p>
-      `
+      `,
     };
     return owner.sendOwnerMailer(emailData);
   } catch (error) {
@@ -143,19 +138,20 @@ const sendNewuserCreated = async (firstName, resultsArray) => {
 };
 
 const sendReturnuser = async (firstName, resultsArray) => {
-
   try {
     const emailData = {
-      email: "admin@bisiblvd.com.",
+      email: "admin@bisiblvd.com",
       subject: `User will be back`,
       html: `
           <p>Dear Noelle <p>
           <p> 
-          User will be back <b style="color:green;">  ${firstName} </b> and recently joined our community under <b style="color:green;"> ${resultsArray.map(data => data.businessType).join(', ')} </b>. Click here ${AdminUrl}/users to check more.</p>
+          User will be back <b style="color:green;">  ${firstName} </b> and recently joined our community under <b style="color:green;"> ${resultsArray
+        .map((data) => data.businessType)
+        .join(", ")} </b>. Click here ${AdminUrl}/users to check more.</p>
           <hr />
           <p>This email may contain sensitive information</p>
           <p></p>
-      `
+      `,
     };
     return owner.sendOwnerMailer(emailData);
   } catch (error) {
@@ -164,7 +160,6 @@ const sendReturnuser = async (firstName, resultsArray) => {
 };
 
 const accountDeactivationMail = async (firstname, email) => {
-
   try {
     const emailData = {
       email: email,
@@ -175,7 +170,7 @@ const accountDeactivationMail = async (firstname, email) => {
           Dear <b style="color:green;"> ${firstname} </b> Your account is deactivated.</p>
           <hr />
           <p></p>
-      `
+      `,
     };
     return owner.sendOwnerMailer(emailData);
   } catch (error) {
@@ -184,7 +179,6 @@ const accountDeactivationMail = async (firstname, email) => {
 };
 
 const accountactivationMailToOwner = async (firstname, email) => {
-
   try {
     const emailData = {
       email: "admin@bisiblvd.com",
@@ -195,7 +189,7 @@ const accountactivationMailToOwner = async (firstname, email) => {
         <b style="color:green;">    ${email}  Acoount was Activated by ${firstname}.</p>
           <hr />
           <p></p>
-      `
+      `,
     };
     return owner.sendOwnerMailer(emailData);
   } catch (error) {
@@ -203,7 +197,6 @@ const accountactivationMailToOwner = async (firstname, email) => {
   }
 };
 const accountactivationMail = async (firstname, email) => {
-
   try {
     const emailData = {
       email: email,
@@ -214,7 +207,7 @@ const accountactivationMail = async (firstname, email) => {
           Dear <b style="color:green;"> ${firstname} </b> Your account is activated.</p>
           <hr />
           <p></p>
-      `
+      `,
     };
     return owner.sendOwnerMailer(emailData);
   } catch (error) {
@@ -223,7 +216,6 @@ const accountactivationMail = async (firstname, email) => {
 };
 
 const NewPaymentactivationMail = async (firstname, Plan) => {
-
   try {
     const emailData = {
       email: "admin@bisiblvd.com",
@@ -234,7 +226,7 @@ const NewPaymentactivationMail = async (firstname, Plan) => {
           Dear <b style="color:green;"> ${firstname} </b> Purchase a plan </p>
           <hr />
           <p></p>
-      `
+      `,
     };
     return owner.sendOwnerMailer(emailData);
   } catch (error) {
@@ -242,9 +234,7 @@ const NewPaymentactivationMail = async (firstname, Plan) => {
   }
 };
 
-
 const accountDeactivationMailToOwner = async (firstname, email) => {
-
   try {
     const emailData = {
       email: "admin@bisiblvd.com",
@@ -255,15 +245,13 @@ const accountDeactivationMailToOwner = async (firstname, email) => {
         <b style="color:green;">    ${email}  Acoount was deactivated by ${firstname}.</p>
           <hr />
           <p></p>
-      `
+      `,
     };
     return owner.sendOwnerMailer(emailData);
   } catch (error) {
     throw error;
   }
 };
-
-
 
 const sendBookingMail = async (
   email,
@@ -302,7 +290,6 @@ const sendBookingMail = async (
           time: time,
           price: price,
           ServiceDuration: ServiceDuration,
-
         },
         (err, data) => {
           if (err) {
@@ -317,43 +304,57 @@ const sendBookingMail = async (
           }
         }
       );
-
     } else {
       function replaceStringBetween(str, target, replacement) {
         // If the input string is empty, return an empty string
         if (!str) {
-          return '';
+          return "";
         }
-      
+
         let result = str;
         // Find all occurrences of the target string (case-sensitive)
         let startIndex = result.indexOf(target);
         let endIndex = startIndex + target.length;
-      
+
         while (startIndex !== -1) {
           // Construct the new string by replacing the substring between the current target occurrence
           const start = result.slice(0, startIndex);
           const middle = replacement;
           const end = result.slice(endIndex);
-      
+
           // Update the result with the replaced string
           result = start + middle + end;
-      
+
           // Find the next occurrence of the target string
           startIndex = result.indexOf(target, endIndex);
           endIndex = startIndex + target.length;
         }
-      
+
         return result;
       }
-      
-      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
-      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
-      
-      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
-      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
 
-      
+      let description1AfterReplacing = replaceStringBetween(
+        description1,
+        "#SERVICE_NAME#",
+        servicess
+      );
+      let description1Final = replaceStringBetween(
+        description1AfterReplacing,
+        "#DATE#",
+        ServiceDuration + " at " + time
+      );
+
+      let description2AfterReplacing = replaceStringBetween(
+        description2,
+        "#SERVICE_NAME#",
+        servicess
+      );
+      let description2Final = replaceStringBetween(
+        description2AfterReplacing,
+        "#DATE#",
+        ServiceDuration + " at " + time
+      );
+
       ejs.renderFile(
         parentDir + "/mail_template/emailtemplateCustom.html",
         {
@@ -368,8 +369,7 @@ const sendBookingMail = async (
           ServiceDuration: ServiceDuration,
           description1: description1Final,
           description2: description2Final,
-          endsWith: endsWith
-
+          endsWith: endsWith,
         },
         (err, data) => {
           if (err) {
@@ -385,12 +385,10 @@ const sendBookingMail = async (
         }
       );
     }
-
   } catch (error) {
     throw error;
   }
 };
-
 
 const sendBookingMailExternal = async (
   email,
@@ -427,7 +425,7 @@ const sendBookingMailExternal = async (
           Date: Date,
           time: time,
           price: bookingPaymentStatus,
-          ServiceDuration: ServiceDuration
+          ServiceDuration: ServiceDuration,
         },
         (err, data) => {
           if (err) {
@@ -442,42 +440,57 @@ const sendBookingMailExternal = async (
           }
         }
       );
-    }else {
+    } else {
       function replaceStringBetween(str, target, replacement) {
         // If the input string is empty, return an empty string
         if (!str) {
-          return '';
+          return "";
         }
-      
+
         let result = str;
         // Find all occurrences of the target string (case-sensitive)
         let startIndex = result.indexOf(target);
         let endIndex = startIndex + target.length;
-      
+
         while (startIndex !== -1) {
           // Construct the new string by replacing the substring between the current target occurrence
           const start = result.slice(0, startIndex);
           const middle = replacement;
           const end = result.slice(endIndex);
-      
+
           // Update the result with the replaced string
           result = start + middle + end;
-      
+
           // Find the next occurrence of the target string
           startIndex = result.indexOf(target, endIndex);
           endIndex = startIndex + target.length;
         }
-      
+
         return result;
       }
-      
-      let description1AfterReplacing = replaceStringBetween(description1, "#SERVICE_NAME#", servicess);
-      let description1Final = replaceStringBetween(description1AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
-      
-      let description2AfterReplacing = replaceStringBetween(description2, "#SERVICE_NAME#", servicess);
-      let description2Final = replaceStringBetween(description2AfterReplacing, "#DATE#", ServiceDuration + " at " + time);
-    
-      
+
+      let description1AfterReplacing = replaceStringBetween(
+        description1,
+        "#SERVICE_NAME#",
+        servicess
+      );
+      let description1Final = replaceStringBetween(
+        description1AfterReplacing,
+        "#DATE#",
+        ServiceDuration + " at " + time
+      );
+
+      let description2AfterReplacing = replaceStringBetween(
+        description2,
+        "#SERVICE_NAME#",
+        servicess
+      );
+      let description2Final = replaceStringBetween(
+        description2AfterReplacing,
+        "#DATE#",
+        ServiceDuration + " at " + time
+      );
+
       ejs.renderFile(
         parentDir + "/mail_template/emialexternalcustom.html",
         {
@@ -492,7 +505,7 @@ const sendBookingMailExternal = async (
           ServiceDuration: ServiceDuration,
           description1: description1Final,
           description2: description2Final,
-          endsWith: endsWith
+          endsWith: endsWith,
         },
         (err, data) => {
           if (err) {
@@ -508,7 +521,6 @@ const sendBookingMailExternal = async (
         }
       );
     }
-
   } catch (error) {
     throw error;
   }
@@ -529,7 +541,7 @@ const sendPaymentMail = async (
     const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
       expiresIn: "5m",
     });
-    email
+    email;
     ejs.renderFile(
       parentDir + "/mail_template/paymenttemplate.html",
       {
@@ -540,7 +552,7 @@ const sendPaymentMail = async (
         time: paymentTime,
         invoice: invoiceId,
         price: finalPrice,
-        ServiceDuration: ServiceDuration
+        ServiceDuration: ServiceDuration,
       },
       (err, data) => {
         if (err) {
@@ -576,7 +588,7 @@ const sendBookingMailOwner = async (
       expiresIn: "5m",
     });
     const link = `${process.env.FRONT_BASE_URL}/editbooking/${bookingId}`;
-    ownerEmail
+    ownerEmail;
     ejs.renderFile(
       parentDir + "/mail_template/bookingEmail.html",
       {
@@ -686,17 +698,16 @@ const activateAccount = async (token) => {
         { email: decodedUser.email },
         { status: 1 }
       );
-      const countryCode = user.selectedCountry.split(' ')[1];
-      const smsData =
-      {
+      const countryCode = user.selectedCountry.split(" ")[1];
+      const smsData = {
         to: `${countryCode}${user.mobile}`,
         text: `Congratulations, your Bisi Blvd. Account has been activated.`,
-      }
+      };
       await smtpSms(smsData);
       return user;
     }
   } catch (error) {
-    console.log(error)
+    console.log(error);
     throw error;
   }
 };
@@ -739,7 +750,10 @@ const resetPassword = async (values) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     if (resetToken) {
       try {
-        const decoded = await jwt.verify(resetToken, process.env.JWT_RESET_PASSWORD);
+        const decoded = await jwt.verify(
+          resetToken,
+          process.env.JWT_RESET_PASSWORD
+        );
       } catch (err) {
         throw Error("password reset link is expired");
       }
@@ -817,14 +831,18 @@ const sendProductPaymentMail = async (
   productsDesciption,
   totalPrice,
   paymentDate,
-  paymentTime,
+  paymentTime
 ) => {
   try {
     var parentDir = path.dirname("api");
-    const token = jwt.sign({ customerMail }, process.env.JWT_ACCOUNT_ACTIVATION, {
-      expiresIn: "5m",
-    });
-    customerMail
+    const token = jwt.sign(
+      { customerMail },
+      process.env.JWT_ACCOUNT_ACTIVATION,
+      {
+        expiresIn: "5m",
+      }
+    );
+    customerMail;
     ejs.renderFile(
       parentDir + "/mail_template/productPaymentTemplate.html",
       {
@@ -856,7 +874,7 @@ const sendProductBookingOwner = async (
   customerName,
   email,
   ownderName,
-  productsDesciption,
+  productsDesciption
 ) => {
   console.log("Email here", email);
   try {
@@ -864,7 +882,7 @@ const sendProductBookingOwner = async (
     const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
       expiresIn: "5m",
     });
-    email
+    email;
     ejs.renderFile(
       parentDir + "/mail_template/productBookingTemplate.html",
       {
