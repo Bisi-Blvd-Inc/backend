@@ -51,8 +51,8 @@ const bookClassOccurrence = async ({
   if (occurrence.seats.availableSeats < seatsToBook)
     throw new Error("Not enough seats available");
 
-  occurrence?.seats?.availableSeats -= seatsToBook;
-  occurrence?.seats?.bookedSeats += seatsToBook;
+  occurrence.seats.availableSeats -= seatsToBook;
+  occurrence.seats.bookedSeats += seatsToBook;
 
   await classDoc.save();
 
