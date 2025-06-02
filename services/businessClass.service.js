@@ -1,6 +1,102 @@
 const businessClassCollection = require("../models/businessClass.js");
+const moment = require("moment");
 
-const post = (payload) => businessClassCollection.create(payload);
+const generateOccurrences = ({
+  date,
+  reoccurringDays,
+  reoccurringEndDate,
+  startTime,
+  endTime,
+  seats,
+}) => {
+  const occurrences = [];
+  let currentDate = moment(date);
+  const endDate = moment(reoccurringEndDate);
+
+  const interval =
+    reoccurringDays === "Daily"
+      ? "days"
+      : reoccurringDays === "Weekly"
+      ? "weeks"
+      : "months";
+
+  while (currentDate.isSameOrBefore(endDate, "day")) {
+    occurrences.push({
+      date: currentDate.toDate(),
+      startTime,
+      endTime,
+      seats: { ...seats },
+    });
+    currentDate = currentDate.add(1, interval);
+  }
+
+  return occurrences;
+};
+
+const bookClassOccurrence = async ({
+  classId,
+  occurrenceDate,
+  seatsToBook,
+}) => {
+  const classDoc = await businessClassCollection.findById(classId);
+
+  if (!classDoc) return;
+
+  const occurrence = classDoc?.occurrences.find((o) =>
+    moment(o.date).isSame(moment(occurrenceDate), "day")
+  );
+
+  if (!occurrence) return;
+
+  if (occurrence.seats.availableSeats < seatsToBook)
+    throw new Error("Not enough seats available");
+
+  occurrence?.seats?.availableSeats -= seatsToBook;
+  occurrence?.seats?.bookedSeats += seatsToBook;
+
+  await classDoc.save();
+
+  return occurrence;
+};
+
+const createClass = async (data) => {
+  const {
+    isReoccurring,
+    date,
+    reoccurringDays,
+    reoccurringEndDate,
+    startTime,
+    endTime,
+    seats,
+  } = data;
+
+  let occurrences = [];
+
+  if (isReoccurring && reoccurringDays && reoccurringEndDate) {
+    occurrences = generateOccurrences({
+      date,
+      reoccurringDays,
+      reoccurringEndDate,
+      startTime,
+      endTime,
+      seats,
+    });
+  } else {
+    occurrences = [
+      {
+        date,
+        startTime,
+        endTime,
+        seats,
+      },
+    ];
+  }
+
+  return await businessClassCollection.create({
+    ...data,
+    occurrences,
+  });
+};
 const getClass = (pageNo, limit) => {
   return businessClassCollection
     .find({ isDeleted: false })
@@ -14,7 +110,38 @@ const getClassById = (id) => {
     .sort({ updatedAt: -1, createdAt: -1 });
 };
 const updateById = (condition, obj) => {
-  return businessClassCollection.findByIdAndUpdate(condition, obj);
+  const {
+    isReoccurring,
+    date,
+    reoccurringDays,
+    reoccurringEndDate,
+    startTime,
+    endTime,
+    seats,
+  } = obj;
+
+  let occurrences = [];
+
+  if (isReoccurring && reoccurringDays && reoccurringEndDate) {
+    occurrences = generateOccurrences({
+      date,
+      reoccurringDays,
+      reoccurringEndDate,
+      startTime,
+      endTime,
+      seats,
+    });
+  } else {
+    occurrences = [
+      {
+        date,
+        startTime,
+        endTime,
+        seats,
+      },
+    ];
+  }
+  return businessClassCollection.findByIdAndUpdate(condition, {...obj, occurrences});
 };
 const getClassSearch = (pageNo, limit, text) => {
   return businessClassCollection
@@ -31,9 +158,10 @@ const deleteById = (id) => {
 
 module.exports = {
   getClass,
-  post,
+  createClass,
   getClassSearch,
   updateById,
   getClassById,
   deleteById,
+  bookClassOccurrence,
 };
