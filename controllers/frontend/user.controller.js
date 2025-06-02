@@ -695,8 +695,14 @@ const createExternalBooking = async (req, res) => {
       businessClassData = await businessClassCollection.find({
         _id: { $in: classes },
       });
-      const classStartTime = moment(businessClassData[0]?.startTime, "hh:mm A");
-      const classEndTime = moment(businessClassData[0]?.endTime, "hh:mm A");
+      const classStartTime = moment(
+        businessClassData[0]?.occurrences[0]?.startTime,
+        "hh:mm A"
+      );
+      const classEndTime = moment(
+        businessClassData[0]?.occurrences[0]?.endTime,
+        "hh:mm A"
+      );
       const duration = moment.duration(classEndTime.diff(classStartTime));
       const hours = Math.floor(duration.asHours());
       const minutes = duration.minutes();
@@ -835,16 +841,11 @@ const createExternalBooking = async (req, res) => {
           // If class or service
           if (serviceType === "Class") {
             const businessClassId = businessClassData[0]?._id;
-            const obj = {
-              seats: {
-                availableSeats:
-                  businessClassData[0]?.seats?.availableSeats - numberOfSeats,
-                bookedSeats:
-                  businessClassData[0]?.seats?.bookedSeats + numberOfSeats,
-                totalSeats: businessClassData[0]?.seats?.totalSeats,
-              },
-            };
-            await businessClassService.updateById(businessClassId, obj);
+            await businessClassService.bookClassOccurrence(
+              businessClassId,
+              startDate,
+              numberOfSeats
+            );
           } else {
             const schedule = await calenderSettingService.find({
               addedBy: userId,
@@ -1254,16 +1255,11 @@ const createExternalBooking = async (req, res) => {
           // If class or service
           if (serviceType === "Class") {
             const businessClassId = businessClassData[0]?._id;
-            const obj = {
-              seats: {
-                availableSeats:
-                  businessClassData[0]?.seats?.availableSeats - numberOfSeats,
-                bookedSeats:
-                  businessClassData[0]?.seats?.bookedSeats + numberOfSeats,
-                totalSeats: businessClassData[0]?.seats?.totalSeats,
-              },
-            };
-            await businessClassService.updateById(businessClassId, obj);
+            await businessClassService.bookClassOccurrence(
+              businessClassId,
+              startDate,
+              numberOfSeats
+            );
           } else {
             const schedule = await calenderSettingService.find({
               addedBy: userId,
