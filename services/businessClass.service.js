@@ -42,23 +42,25 @@ const bookClassOccurrence = async ({
 
   if (!classDoc) return;
 
-  const occurrence = classDoc?.occurrences.find((o) =>
+  const occurrenceIndex = classDoc.occurrences.findIndex((o) =>
     moment(o.date).isSame(moment(occurrenceDate), "day")
   );
 
-  if (!occurrence) return;
+  if (occurrenceIndex === -1) return;
+
+  const occurrence = classDoc.occurrences[occurrenceIndex];
 
   if (occurrence.seats.availableSeats < seatsToBook)
     throw new Error("Not enough seats available");
 
-  occurrence.seats.availableSeats -= seatsToBook;
-  occurrence.seats.bookedSeats += seatsToBook;
+  classDoc.occurrences[occurrenceIndex].seats.availableSeats -= seatsToBook;
+  classDoc.occurrences[occurrenceIndex].seats.bookedSeats += seatsToBook;
 
-  classDoc.markModified("occurrences");
+  classDoc.markModified(`occurrences.${occurrenceIndex}.seats`);
 
   await classDoc.save();
 
-  return occurrence;
+  return classDoc.occurrences[occurrenceIndex];
 };
 
 const createClass = async (data) => {
