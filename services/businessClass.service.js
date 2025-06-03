@@ -35,23 +35,23 @@ const generateOccurrences = ({
 
 const bookClassOccurrence = async ({
   classId,
-  occurrenceDate,
+  classOccurenceId,
   seatsToBook,
 }) => {
   const classDoc = await businessClassCollection.findById(classId);
-
   if (!classDoc) return;
 
-  const occurrenceIndex = classDoc.occurrences.findIndex((o) =>
-    moment(o.date).isSame(moment(occurrenceDate), "day")
+  const occurrenceIndex = classDoc.occurrences.findIndex(
+    (o) => o._id.toString() === classOccurenceId.toString()
   );
 
   if (occurrenceIndex === -1) return;
 
   const occurrence = classDoc.occurrences[occurrenceIndex];
 
-  if (occurrence.seats.availableSeats < seatsToBook)
+  if (occurrence.seats.availableSeats < seatsToBook) {
     throw new Error("Not enough seats available");
+  }
 
   classDoc.occurrences[occurrenceIndex].seats.availableSeats -= seatsToBook;
   classDoc.occurrences[occurrenceIndex].seats.bookedSeats += seatsToBook;
