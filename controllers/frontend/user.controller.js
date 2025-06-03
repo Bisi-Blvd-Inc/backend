@@ -666,6 +666,7 @@ const createExternalBooking = async (req, res) => {
       numberOfSeats,
       classes,
       products,
+      classOccurenceId,
     } = req.body;
     const emailSettingData = await emailSettingService.findOne({
       addedBy: userId,
@@ -843,7 +844,7 @@ const createExternalBooking = async (req, res) => {
             const businessClassId = businessClassData[0]?._id;
             await businessClassService.bookClassOccurrence(
               businessClassId,
-              startDate,
+              classOccurenceId,
               numberOfSeats
             );
           } else {
@@ -1257,7 +1258,7 @@ const createExternalBooking = async (req, res) => {
             const businessClassId = businessClassData[0]?._id;
             await businessClassService.bookClassOccurrence(
               businessClassId,
-              startDate,
+              classOccurenceId,
               numberOfSeats
             );
           } else {
