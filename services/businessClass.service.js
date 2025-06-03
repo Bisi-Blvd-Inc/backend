@@ -54,6 +54,8 @@ const bookClassOccurrence = async ({
   occurrence.seats.availableSeats -= seatsToBook;
   occurrence.seats.bookedSeats += seatsToBook;
 
+  classDoc.markModified("occurrences");
+
   await classDoc.save();
 
   return occurrence;
@@ -141,7 +143,10 @@ const updateById = (condition, obj) => {
       },
     ];
   }
-  return businessClassCollection.findByIdAndUpdate(condition, {...obj, occurrences});
+  return businessClassCollection.findByIdAndUpdate(condition, {
+    ...obj,
+    occurrences,
+  });
 };
 const getClassSearch = (pageNo, limit, text) => {
   return businessClassCollection
