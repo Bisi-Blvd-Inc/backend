@@ -41,26 +41,31 @@ const bookClassOccurrence = async ({
   const classDoc = await businessClassCollection.findById(classId);
   if (!classDoc) return;
 
-  const occurrenceIndex = classDoc.occurrences.findIndex(
+  const occurrence = classDoc.occurrences.find(
     (o) => o._id.toString() === classOccurenceId.toString()
   );
-
-  if (occurrenceIndex === -1) return;
-
-  const occurrence = classDoc.occurrences[occurrenceIndex];
+  if (!occurrence) return;
 
   if (occurrence.seats.availableSeats < seatsToBook) {
     throw new Error("Not enough seats available");
   }
 
-  classDoc.occurrences[occurrenceIndex].seats.availableSeats -= seatsToBook;
-  classDoc.occurrences[occurrenceIndex].seats.bookedSeats += seatsToBook;
+  const newAvailableSeats = occurrence.seats.availableSeats - seatsToBook;
+  const newBookedSeats = occurrence.seats.bookedSeats + seatsToBook;
 
-  classDoc.markModified(`occurrences.${occurrenceIndex}.seats`);
-
-  await classDoc.save();
-
-  return classDoc.occurrences[occurrenceIndex];
+  await businessClassCollection.findOneAndUpdate(
+    {
+      _id: classId,
+      "occurrences._id": classOccurenceId,
+    },
+    {
+      $set: {
+        "occurrences.$.seats.availableSeats": newAvailableSeats,
+        "occurrences.$.seats.bookedSeats": newBookedSeats,
+      },
+    },
+    { new: true }
+  );
 };
 
 const createClass = async (data) => {
