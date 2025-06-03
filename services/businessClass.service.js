@@ -33,11 +33,7 @@ const generateOccurrences = ({
   return occurrences;
 };
 
-const bookClassOccurrence = async ({
-  classId,
-  classOccurenceId,
-  seatsToBook,
-}) => {
+const bookClassOccurrence = async (classId, classOccurenceId, seatsToBook) => {
   const classDoc = await businessClassCollection.findById(classId);
   if (!classDoc) return;
 
