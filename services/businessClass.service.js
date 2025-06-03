@@ -33,7 +33,11 @@ const generateOccurrences = ({
   return occurrences;
 };
 
-const bookClassOccurrence = async ({ classId, classOccurenceId, seatsToBook }) => {
+const bookClassOccurrence = async ({
+  classId,
+  classOccurenceId,
+  seatsToBook,
+}) => {
   const classDoc = await businessClassCollection.findById(classId);
   if (!classDoc) return;
 
@@ -41,9 +45,7 @@ const bookClassOccurrence = async ({ classId, classOccurenceId, seatsToBook }) =
     (o) => o._id.toString() === classOccurenceId.toString()
   );
 
-  if (occurrenceIndex === -1) {
-    throw new Error("Occurrence not found");
-  }
+  if (occurrenceIndex === -1) return;
 
   const occurrence = classDoc.occurrences[occurrenceIndex];
 
@@ -51,8 +53,8 @@ const bookClassOccurrence = async ({ classId, classOccurenceId, seatsToBook }) =
     throw new Error("Not enough seats available");
   }
 
-  occurrence.seats.availableSeats -= seatsToBook;
-  occurrence.seats.bookedSeats += seatsToBook;
+  classDoc.occurrences[occurrenceIndex].seats.availableSeats -= seatsToBook;
+  classDoc.occurrences[occurrenceIndex].seats.bookedSeats += seatsToBook;
 
   classDoc.markModified(`occurrences.${occurrenceIndex}.seats`);
 
