@@ -1055,6 +1055,8 @@ const editBooking = async (req, res, next) => {
       "eventColor",
       "show",
       "checkinDate",
+      "startDateTime",
+      "classes",
     ]);
     let result = await bookingService.update(
       { _id: Id },

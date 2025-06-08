@@ -1648,6 +1648,12 @@ const ExternalBookingPayment = async (req, res) => {
       classes,
     } = req.body;
 
+    if (!paymentType || !userId || !name || !email || !totalPrice) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+
     let combinedDescription = "";
     let durationDescription = "";
 
@@ -1655,25 +1661,26 @@ const ExternalBookingPayment = async (req, res) => {
     if (service?.length > 0) {
       let totalHours = 0;
       let totalMinutes = 0;
-      const serviceVal = service?.map(Mongoose.Types.ObjectId);
-      const serviceDuration = await serviceSettingCollection.find({
+
+      const serviceIds = service.map(Mongoose.Types.ObjectId);
+      const serviceDurationData = await serviceSettingCollection.find({
         addedBy: userId,
       });
-      const serviceValSet = new Set(serviceVal?.map((val) => val.toString()));
-      const serviceTime = serviceDuration[0]?.service;
+      const serviceValSet = new Set(serviceIds.map((val) => val.toString()));
 
-      serviceTime?.forEach((service) => {
-        const serviceIdString = service?.serviceId.toString();
-        if (serviceValSet.has(serviceIdString)) {
-          totalHours += service?.serviceTime?.hours;
-          totalMinutes += service?.serviceTime?.minutes;
+      const serviceTime = serviceDurationData[0]?.service || [];
+
+      serviceTime.forEach((svc) => {
+        if (serviceValSet.has(svc?.serviceId?.toString())) {
+          totalHours += svc?.serviceTime?.hours || 0;
+          totalMinutes += svc?.serviceTime?.minutes || 0;
         }
       });
       const bookedService = await serviceName.find({
-        _id: { $in: service },
+        _id: { $in: serviceIds },
       });
       combinedDescription = bookedService
-        .map((item) => `${item.service}`)
+        .map((item) => item.service)
         .join(", ");
       if (totalMinutes >= 60) {
         const extraHours = Math.floor(totalMinutes / 60);
@@ -1685,77 +1692,112 @@ const ExternalBookingPayment = async (req, res) => {
       const businessClassData = await businessClassCollection.find({
         _id: { $in: classes },
       });
-      const classStartTime = moment(businessClassData[0]?.startTime, "hh:mm A");
-      const classEndTime = moment(businessClassData[0]?.endTime, "hh:mm A");
-      const duration = moment.duration(classEndTime.diff(classStartTime));
+      const classData = businessClassData?.[0];
+      if (!classData) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Class not found" });
+      }
+
+      const start = moment(classData?.startTime, "hh:mm A");
+      const end = moment(classData?.endTime, "hh:mm A");
+      const duration = moment.duration(end.diff(start));
       const hours = Math.floor(duration.asHours());
       const minutes = duration.minutes();
+
       durationDescription = `${hours} hours ${minutes} minutes`;
-      combinedDescription = `${
-        businessClassData[0]?.name
-      } class (${numberOfSeats} ${numberOfSeats > 1 ? "seats" : "seat"})`;
+      combinedDescription = `${classData.name} class (${numberOfSeats} ${
+        numberOfSeats > 1 ? "seats" : "seat"
+      })`;
     } else {
-      return res.status(400).json({
-        success: false,
-        message: "No Bookings Found",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "No bookings found" });
     }
 
     const salonOwner = await userCollection.findById(userId);
-    const stripeInstance = stripe(salonOwner.secretKey);
-    const products = await stripeInstance.products.list();
-    var Product = products.data.find((p) => p.name === "Bisi");
-    if (!Product) {
-      Product = await stripeInstance.products.create({
-        name: "Bisi",
+    if (!salonOwner?.secretKey) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Salon owner or secret key missing" });
+    }
+
+    let stripeInstance;
+    try {
+      stripeInstance = stripe(salonOwner.secretKey);
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Stripe initialization failed" });
+    }
+
+    let Product;
+    try {
+      const products = await stripeInstance.products.list();
+      Product = products.data.find((p) => p.name === "Bisi");
+
+      if (!Product) {
+        Product = await stripeInstance.products.create({ name: "Bisi" });
+      }
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Stripe product error: " + err.message,
       });
     }
-    const price = await stripeInstance.prices.create({
-      product: Product.id,
-      unit_amount: totalPrice * 100,
-      currency: "usd",
-    });
 
-    if (paymentType == "Paid") {
-      const paymentIntent = await stripeInstance.paymentIntents.create({
-        amount: totalPrice * 100,
-        customer: customerId,
-        payment_method: paymentMethodId,
-        metadata: {
-          product_id: Product.id,
-        },
+    let stripePrice;
+    try {
+      stripePrice = await stripeInstance.prices.create({
+        product: Product.id,
+        unit_amount: Math.round(Number(totalPrice) * 100),
         currency: "usd",
       });
-      const paymentConfirm = await stripeInstance.paymentIntents.confirm(
-        paymentIntent.id
-      );
-
-      const intent = await stripeInstance.paymentIntents.retrieve(
-        paymentIntent.id
-      );
-
-      const invoice = await stripeInstance.invoices.create({
-        customer: customerId,
-        currency: "usd",
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Stripe price creation error: " + err.message,
       });
+    }
 
-      const invoiceItem = await stripeInstance.invoiceItems.create({
-        customer: customerId,
-        price: price.id,
-        invoice: invoice.id,
-      });
+    if (paymentType === "Paid" || paymentType === "CreditCard") {
+      let paymentIntent;
+      try {
+        paymentIntent = await stripeInstance.paymentIntents.create({
+          amount: Math.round(Number(totalPrice) * 100),
+          customer: customerId,
+          payment_method: paymentMethodId,
+          metadata: { product_id: Product.id },
+          currency: "usd",
+        });
+        await stripeInstance.paymentIntents.confirm(paymentIntent.id);
+      } catch (err) {
+        return res
+          .status(500)
+          .json({ success: false, message: "Payment failed: " + err.message });
+      }
 
-      const paymentDate = new Date();
-      const year = paymentDate.getFullYear();
-      const month = String(paymentDate.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
-      const day = String(paymentDate.getDate()).padStart(2, "0");
+      let invoice;
+      try {
+        invoice = await stripeInstance.invoices.create({
+          customer: customerId,
+          currency: "usd",
+        });
+        await stripeInstance.invoiceItems.create({
+          customer: customerId,
+          price: stripePrice.id,
+          invoice: invoice.id,
+        });
+      } catch (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Invoice creation error: " + err.message,
+        });
+      }
 
-      const hours = String(paymentDate.getUTCHours()).padStart(2, "0");
-      const minutes = String(paymentDate.getUTCMinutes()).padStart(2, "0");
+      const paymentTime = new Date().toISOString().slice(11, 16);
+      const date = new Date().toISOString().slice(0, 10);
 
-      const paymentTime = `${hours}:${minutes}`;
-      const date = `${year}-${month}-${day}`;
-      const invoiceId = invoice.id;
       sendPaymentMail(
         name,
         email,
@@ -1763,54 +1805,61 @@ const ExternalBookingPayment = async (req, res) => {
         date,
         durationDescription,
         paymentTime,
-        invoiceId,
+        invoice.id,
         totalPrice
       );
 
-      const countryCode = selectedCountry?.split(" ")[1];
-      const countryCode2 = selectedBenificialCountry?.split(" ")[1];
-      if (selectedBenificialCountry && benificialPhone) {
-        let smsData = {
-          to: `${countryCode}${phone}`,
-          text: "Your Booked Service Appointment is confirmed.",
-        };
+      const countryCode = selectedCountry?.split(" ")[1] || "";
+      const countryCode2 = selectedBenificialCountry?.split(" ")[1] || "";
 
-        let smsData2 = {
-          to: `${countryCode2}${benificialPhone}`,
-          text: "Your Booked Service Appointment is confirmed.",
-        };
-
-        await smtpSms(smsData);
-        await smtpSms(smsData2);
-      } else if (phone?.length > 0) {
-        let smsData = {
-          to: `${countryCode}${phone}`,
-          text: "Your Booked Service Appointment is confirmed.",
-        };
-        await smtpSms(smsData);
+      try {
+        if (selectedBenificialCountry && benificialPhone) {
+          await smtpSms({
+            to: `${countryCode}${phone}`,
+            text: "Your Booked Service Appointment is confirmed.",
+          });
+          await smtpSms({
+            to: `${countryCode2}${benificialPhone}`,
+            text: "Your Booked Service Appointment is confirmed.",
+          });
+        } else if (phone) {
+          await smtpSms({
+            to: `${countryCode}${phone}`,
+            text: "Your Booked Service Appointment is confirmed.",
+          });
+        }
+      } catch (err) {
+        console.error("SMS sending error:", err.message);
       }
 
-      const obj = {
-        name: name,
-        email: email,
+      const paymentDetails = {
+        name,
+        email,
         paymentIntent: paymentIntent.id,
         invoiceNumber: invoice.id,
-        paymentStatus: paymentConfirm.status,
-        amount: paymentIntent.amount / 100,
+        paymentStatus: paymentIntent.status,
+        amount: Number(paymentIntent.amount) / 100,
         userId,
       };
 
-      const payment = paymentCollection.create(obj);
+      await paymentCollection.create(paymentDetails);
 
       return res.status(200).json({
         success: true,
-        clientSecret: paymentIntent?.client_secret,
-        price: obj.amount,
+        clientSecret: paymentIntent.client_secret,
+        price: paymentDetails.amount,
         status: 200,
       });
     }
+
+    return res
+      .status(400)
+      .json({ success: false, message: "Unsupported payment type" });
   } catch (error) {
-    return res.status(500).json({ code: 500, message: error.message });
+    console.error("Unhandled error in booking payment:", error.message);
+    return res
+      .status(500)
+      .json({ code: 500, message: "Server error: " + error.message });
   }
 };
 
