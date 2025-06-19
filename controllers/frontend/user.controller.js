@@ -1789,7 +1789,9 @@ const ExternalBookingPayment = async (req, res) => {
         });
         await stripeInstance.invoiceItems.create({
           customer: customerId,
-          price: stripePrice.id,
+          amount: Math.round(Number(totalPrice) * 100),
+          currency: "usd",
+          description: combinedDescription,
           invoice: invoice.id,
         });
       } catch (err) {
