@@ -1769,6 +1769,10 @@ const ExternalBookingPayment = async (req, res) => {
           payment_method: paymentMethodId,
           metadata: { product_id: Product.id },
           currency: "usd",
+          automatic_payment_methods: {
+            enabled: true,
+            allow_redirects: "never",
+          },
         });
         await stripeInstance.paymentIntents.confirm(paymentIntent.id);
       } catch (err) {
