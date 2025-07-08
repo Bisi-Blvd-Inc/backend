@@ -64,6 +64,42 @@ const bookClassOccurrence = async (classId, classOccurenceId, seatsToBook) => {
   );
 };
 
+const updateClassOccurrence = async (
+  classId,
+  classOccurenceId,
+  oldSeats,
+  newSeats
+) => {
+  const classDoc = await businessClassCollection.findById(classId);
+  if (!classDoc) return;
+
+  const occurrence = classDoc.occurrences.find(
+    (o) => o._id.toString() === classOccurenceId.toString()
+  );
+  if (!occurrence) return;
+
+  const availableSeats = occurrence.seats.availableSeats + oldSeats - newSeats;
+  const bookedSeats = occurrence.seats.bookedSeats - oldSeats + newSeats;
+
+  if (availableSeats < 0) {
+    throw new Error("Not enough seats available for update");
+  }
+
+  await businessClassCollection.findOneAndUpdate(
+    {
+      _id: classId,
+      "occurrences._id": classOccurenceId,
+    },
+    {
+      $set: {
+        "occurrences.$.seats.availableSeats": availableSeats,
+        "occurrences.$.seats.bookedSeats": bookedSeats,
+      },
+    },
+    { new: true }
+  );
+};
+
 const createClass = async (data) => {
   const {
     isReoccurring,
@@ -172,4 +208,5 @@ module.exports = {
   getClassById,
   deleteById,
   bookClassOccurrence,
+  updateClassOccurrence,
 };
