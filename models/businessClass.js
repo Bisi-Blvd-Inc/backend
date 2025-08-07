@@ -1,6 +1,17 @@
 var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
+const occurrenceSchema = new Schema({
+  date: { type: Date, required: true },
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  seats: {
+    availableSeats: { type: Number, default: 0 },
+    bookedSeats: { type: Number, default: 0 },
+    totalSeats: { type: Number, default: 0 },
+  },
+});
+
 var businessClassSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -8,13 +19,7 @@ var businessClassSchema = new Schema(
     description: { type: String },
     price: { type: Number, default: 0, required: true },
     date: { type: Date, default: Date.now, required: true },
-    startTime: { type: String, required: true },
-    endTime: { type: String, required: true },
-    seats: {
-      availableSeats: { type: Number, default: 0 },
-      bookedSeats: { type: Number, default: 0 },
-      totalSeats: { type: Number, default: 0 },
-    },
+    occurrences: [occurrenceSchema],
     difficultyLevel: {
       type: String,
       enum: ["Beginner", "Intermediate", "Advanced"],

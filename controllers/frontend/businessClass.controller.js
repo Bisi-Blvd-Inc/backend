@@ -33,7 +33,7 @@ const create = async (req, res) => {
       endTime,
       addedBy: req._user,
     };
-    const result = await businessClassService.post(payload);
+    const result = await businessClassService.createClass(payload);
     if (result) {
       return res.status(200).json({
         message: "Classes added successfully",

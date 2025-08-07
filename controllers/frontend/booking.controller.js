@@ -3,7 +3,11 @@ const customerCollection = require("../../services/customer.service");
 const customerService = require("../../services/customer.service");
 const bookingCollection = require("../../models/booking");
 const notificationCollection = require("../../models/notification");
+const businessClassCollection = require("../../models/businessClass");
 const calenderSettingService = require("../../services/schedule.service");
+const businessClassService = require("../../services/businessClass.service");
+const inventoryService = require("../../services/inventory.service");
+const productService = require("../../services/product.service");
 const serviceName = require("../../models/businessService");
 const serviceSetting = require("../../models/serviceSetting");
 const BookingLink = require("../../models/customizedLink");
@@ -13,7 +17,614 @@ const { smtpSms } = require("../../helpers/twilio");
 const Mongoose = require("mongoose");
 const { pick } = require("lodash");
 const businessService = require("../../services/business.service");
-const emailSettingService=require("../../models/emailSetting")
+const emailSettingService = require("../../models/emailSetting");
+// const createBooking = async (req, res) => {
+//   try {
+//     let {
+//       name,
+//       email,
+//       phoneNumber,
+//       startDate,
+//       startDateTime,
+//       endDateTime,
+//       endDate,
+//       paymentType,
+//       servicePrice,
+//       benificialName,
+//       bookingType,
+//       benificialEmail,
+//       benificialPhone,
+//       bookingStatus,
+//       selectedCountry,
+//       availableSlot,
+//       selectedBenificialCountry,
+//       service,
+//       scheduleexist,
+//     } = req.body;
+//     const userId = req._user;
+
+//     if (availableSlot == null || availableSlot == "null") {
+//       return res.status(500).json({
+//         success: false,
+//         message: "Something went wrong",
+//         status: 500,
+//       });
+//     }
+//     const serviceVal = [];
+//     const serviceData = service.map(async (item) => {
+//       serviceVal.push(Mongoose.Types.ObjectId(item));
+//     });
+//     const singleBooking = await serviceName.find({
+//       _id: {
+//         $in: serviceVal,
+//       },
+//     });
+//     const serviceDuration = await serviceSetting.find({ addedBy: userId });
+//     const serviceValSet = new Set(serviceVal.map((val) => val.toString()));
+//     const serviceTime = serviceDuration[0].service;
+
+//     let totalHours = 0;
+//     let totalMinutes = 0;
+
+//     serviceTime.forEach((service) => {
+//       const serviceIdString = service.serviceId.toString();
+//       if (serviceValSet.has(serviceIdString)) {
+//         totalHours += service.serviceTime.hours;
+//         totalMinutes += service.serviceTime.minutes;
+//       }
+//     });
+//     if (totalMinutes >= 60) {
+//       const extraHours = Math.floor(totalMinutes / 60);
+//       totalHours += extraHours;
+//       totalMinutes -= extraHours * 60;
+//     }
+//     const ServiceDuration = `${totalHours} hours ${totalMinutes} minutes`;
+//     const servicess = singleBooking.map((item) => {
+//       return item.service;
+//     });
+//     const exist = await customerCollection.findOne({
+//       email: email?.toLowerCase(),
+//       userId: Mongoose.Types.ObjectId(userId),
+//     });
+//     const obj = {
+//       name: name,
+//       email: email?.toLowerCase(),
+//       phoneNumber: phoneNumber,
+//       userId: userId,
+//       startDate: startDate,
+//       paymentType: paymentType,
+//       endDate: endDate,
+//       servicePrice: servicePrice,
+//       startDateTime: startDateTime,
+//       endDateTime: endDateTime,
+//       bookingType: bookingType,
+//       selectedCountry: selectedCountry,
+//       selectedBenificialCountry: selectedBenificialCountry,
+//       service: service,
+//       bookingStatus: bookingStatus,
+//       benificialName: benificialName,
+//       benificialEmail: benificialEmail,
+//       benificialPhone: benificialPhone,
+//       scheduleexist: scheduleexist,
+//     };
+
+//     //email setting data
+//     const emailSettingData=await emailSettingService.findOne({addedBy:userId})
+//     const description1=emailSettingData?.description1 || ""
+//     const description2=emailSettingData?.description2 || ""
+//     const endsWith=emailSettingData?.endsWith || ""
+
+//     console.log(emailSettingData,description1,description2,endsWith," maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+
+//     if (exist) {
+//       if (bookingType == "self") {
+//         const alreadySchdule = await bookingCollection.find({
+//           startDateTime: startDateTime,
+//         });
+//         if (alreadySchdule?.length > 0) {
+//           return res.status(400).json({
+//             success: false,
+//             message: "Schedule is already booked",
+//             status: 400,
+//           });
+//         }
+//         const newObj = {
+//           ...obj,
+//           customerId: exist?._id,
+//           bookingFor: exist?._id,
+//           selectedBenificialCountry: selectedBenificialCountry,
+//           bookedBy: userId,
+//         };
+//         const createdBooking = await bookingService.post(newObj);
+//         const bookingId = createdBooking?._id;
+//         const userData = await bookingService.findById(bookingId);
+//         const bookingStatusVal = createdBooking.bookingStatus;
+//         const bookingDate = createdBooking.startDateTime.slice(0, 15);
+//         var dateObj = moment(
+//           createdBooking?.startDateTime,
+//           "ddd MMM DD YYYY hh:mm:A"
+//         );
+//         var time = dateObj.format("hh:mm:A");
+//         const price = servicePrice ? servicePrice : "UnPaid";
+//         sendBookingMail(
+//           email,
+//           name,
+//           servicess,
+//           bookingDate,
+//           ServiceDuration,
+//           time,
+//           bookingStatusVal,
+//           bookingId,
+//           price,
+//           description1,
+//           description2,
+//           endsWith
+//         );
+//         if (createdBooking) {
+//           const schedule = await calenderSettingService.find({
+//             addedBy: req._user,
+//           });
+
+//           const Id = schedule?._id;
+//           const obj = {
+//             scheduledData: availableSlot,
+//           };
+//           let result = await calenderSettingService.update(Id, obj);
+//         }
+//         const countryCode = createdBooking.selectedCountry.split(" ")[1];
+//         let smsData = {
+//           to: `${countryCode}${createdBooking.phoneNumber}`,
+//           text: "Your Booked Service Appointment is confirmed.",
+//         };
+//         await smtpSms(smsData);
+
+//         return res.status(200).json({
+//           success: true,
+//           message: "Booking added successfully",
+//           data: createdBooking,
+//           status: 200,
+//         });
+//       } else if (bookingType === "giftcertificate") {
+//         const alreadySchdule = await bookingCollection.find({
+//           startDateTime: startDateTime,
+//         });
+//         if (alreadySchdule.length > 0) {
+//           return res.status(400).json({
+//             success: false,
+//             message: "Schedule is already booked",
+//             status: 400,
+//           });
+//         }
+//         if (benificialEmail) {
+//           const gift = await customerCollection.findOne({
+//             email: benificialEmail,
+//             userId: Mongoose.Types.ObjectId(userId),
+//           });
+//           if (gift) {
+//             const newObj = {
+//               ...obj,
+//               customerId: exist?._id,
+//               bookingFor: gift?._id,
+//               selectedBenificialCountry: selectedBenificialCountry,
+//               bookedBy: userId,
+//             };
+//             const createdBooking = await bookingService.post(newObj);
+//             const bookingId = createdBooking?._id;
+//             const userData = await bookingService.findById(bookingId);
+//             const bookingStatusVal = createdBooking.bookingStatus;
+//             const bookingDate = createdBooking.startDateTime.slice(0, 15);
+//             var dateObj = moment(
+//               createdBooking?.startDateTime,
+//               "ddd MMM DD YYYY hh:mm:A"
+//             );
+//             var time = dateObj.format("hh:mm:A");
+//             const price = servicePrice ? servicePrice : "UnPaid";
+
+//             sendBookingMail(
+//               email,
+//               name,
+//               servicess,
+//               bookingDate,
+//               ServiceDuration,
+//               time,
+//               bookingStatusVal,
+//               bookingId,
+//               price,
+//               description1,
+//               description2,
+//               endsWith
+//             );
+
+//             if (createdBooking) {
+//               const schedule = await calenderSettingService.find({
+//                 addedBy: req._user,
+//               });
+
+//               const Id = schedule?._id;
+//               const obj = {
+//                 scheduledData: availableSlot,
+//               };
+//               let result = await calenderSettingService.update(Id, obj);
+//             }
+//             const countryCode = createdBooking.selectedCountry.split(" ")[1];
+//             let smsData = {
+//               to: `${countryCode}${createdBooking.phoneNumber}`,
+//               text: "Your Booked Service Appointment is confirmed.",
+//             };
+
+//             await smtpSms(smsData);
+
+//             return res.status(200).json({
+//               success: true,
+//               message: "Booking added successfully",
+//               data: createdBooking,
+//               status: 200,
+//             });
+//           } else {
+//             const obj4 = {
+//               name: benificialName,
+//               email: benificialEmail?.toLowerCase(),
+//               phoneNumber: benificialPhone,
+//               userId: userId,
+//               startDate: startDate,
+//               servicePrice: servicePrice,
+//               endDate: endDate,
+//               startDateTime: startDateTime,
+//               paymentType: paymentType,
+//               endDateTime: endDateTime,
+//               service: service,
+//               bookingType: bookingType,
+//               selectedBenificialCountry: selectedBenificialCountry,
+//               bookingStatus: bookingStatus,
+//               benificialName: "",
+//               benificialEmail: "",
+//               benificialPhone: "",
+//             };
+//             const createCustomer = await customerService.post(obj4);
+//             const newObj = {
+//               ...obj,
+//               customerId: exist?._id,
+//               bookingFor: createCustomer?._id,
+//               selectedBenificialCountry: selectedBenificialCountry,
+//               bookedBy: userId,
+//             };
+//             const createdBooking = await bookingService.post(newObj);
+//             const bookingId = createdBooking?._id;
+//             const userData = await bookingService.findById(bookingId);
+//             const bookingStatusVal = createdBooking.bookingStatus;
+//             const bookingDate = createdBooking.startDateTime.slice(0, 15);
+//             var dateObj = moment(
+//               createdBooking?.startDateTime,
+//               "ddd MMM DD YYYY hh:mm:A"
+//             );
+//             var time = dateObj.format("hh:mm:A");
+//             const price = servicePrice ? servicePrice : "UnPaid";
+
+//             sendBookingMail(
+//               email,
+//               name,
+//               servicess,
+//               bookingDate,
+//               ServiceDuration,
+//               time,
+//               bookingStatusVal,
+//               bookingId,
+//               price,
+//               description1,
+//               description2,
+//               endsWith
+//             );
+//             if (createdBooking) {
+//               const schedule = await calenderSettingService.find({
+//                 addedBy: req._user,
+//               });
+
+//               const Id = schedule?._id;
+//               const obj = {
+//                 scheduledData: availableSlot,
+//               };
+//               let result = await calenderSettingService.update(Id, obj);
+//             }
+//             const countryCode = createdBooking.selectedCountry.split(" ")[1];
+
+//             let smsData = {
+//               to: `${countryCode}${createdBooking.phoneNumber}`,
+//               text: "Your Booked Service Appointment is confirmed.",
+//             };
+
+//             await smtpSms(smsData);
+
+//             return res.status(200).json({
+//               success: true,
+//               message: "Booking added successfully",
+//               data: createdBooking,
+//               status: 200,
+//             });
+//           }
+//         }
+//       }
+//     } else {
+//       const obj3 = {
+//         name: name,
+//         email: email?.toLowerCase(),
+//         phoneNumber: phoneNumber,
+//         userId: userId,
+//         startDate: startDate,
+//         servicePrice: servicePrice,
+//         endDate: endDate,
+//         startDateTime: startDateTime,
+//         paymentType: paymentType,
+//         endDateTime: endDateTime,
+//         service: service,
+//         bookingType: bookingType,
+//         bookingStatus: bookingStatus,
+//         benificialName: benificialName,
+//         selectedCountry: selectedCountry,
+//         selectedBenificialCountry: selectedBenificialCountry,
+//         benificialEmail: benificialEmail,
+//         benificialPhone: benificialPhone,
+//       };
+//       if (bookingType == "self") {
+//         const alreadySchdule = await bookingCollection.find({
+//           startDateTime: startDateTime,
+//         });
+//         if (alreadySchdule.length > 0) {
+//           return res.status(400).json({
+//             success: false,
+//             message: "Schedule is already booked",
+//             status: 400,
+//           });
+//         }
+//         const createCustomer = await customerService.post(obj3);
+//         const newObj = {
+//           ...obj,
+//           customerId: createCustomer?._id,
+//           bookingFor: createCustomer?._id,
+//           selectedBenificialCountry: selectedBenificialCountry,
+//           bookedBy: userId,
+//         };
+
+//         const createdBooking = await bookingService.post(newObj);
+//         const data = {
+//           ...obj3,
+//           bookingId: createdBooking?._id,
+//         };
+//         const CustomerId = createCustomer?._id;
+//         let result = await customerService.update(CustomerId, data);
+
+//         const bookingStatusVal = createdBooking.bookingStatus;
+//         const bookingId = createdBooking?._id;
+//         const userData = await bookingService.findById(bookingId);
+//         const bookingDate = createdBooking.startDateTime.slice(0, 15);
+//         var dateObj = moment(
+//           createdBooking?.startDateTime,
+//           "ddd MMM DD YYYY hh:mm:A"
+//         );
+//         var time = dateObj.format("hh:mm:A");
+//         const price = servicePrice ? servicePrice : "UnPaid";
+
+//         sendBookingMail(
+//           email,
+//           name,
+//           servicess,
+//           bookingDate,
+//           ServiceDuration,
+//           time,
+//           bookingStatusVal,
+//           bookingId,
+//           price,
+//           description1,
+//               description2,
+//           endsWith
+//         );
+//         if (createdBooking) {
+//           const schedule = await calenderSettingService.find({
+//             addedBy: req._user,
+//           });
+
+//           const Id = schedule?._id;
+//           const obj = {
+//             scheduledData: availableSlot,
+//           };
+//           let result = await calenderSettingService.update(Id, obj);
+//         }
+//         const countryCode = createdBooking.selectedCountry.split(" ")[1];
+//         let smsData = {
+//           to: `${countryCode}${createdBooking.phoneNumber}`,
+//           text: "Your Booked Service Appointment is confirmed.",
+//         };
+
+//         await smtpSms(smsData);
+
+//         return res.status(200).json({
+//           success: true,
+//           message: "Booking added successfully",
+//           data: createdBooking,
+//           status: 200,
+//         });
+//       } else if (bookingType == "giftcertificate") {
+//         const alreadySchdule = await bookingCollection.find({
+//           startDateTime: startDateTime,
+//         });
+//         if (alreadySchdule.length > 0) {
+//           return res.status(400).json({
+//             success: false,
+//             message: "Schedule is already created",
+//             status: 400,
+//           });
+//         }
+//         const gift = await customerCollection.findOne({
+//           email: benificialEmail,
+//           userId: Mongoose.Types.ObjectId(userId),
+//         });
+
+//         if (gift) {
+//           const createCustomer = await customerService.post(obj3);
+
+//           const newObj = {
+//             ...obj,
+//             customerId: createCustomer?._id,
+//             bookingFor: gift?._id,
+//             selectedBenificialCountry: selectedBenificialCountry,
+//             bookedBy: userId,
+//           };
+//           const createdBooking = await bookingService.post(newObj);
+//           const data = {
+//             ...obj3,
+//             bookingId: createdBooking?._id,
+//           };
+//           const CustomerId = createCustomer?._id;
+//           let result = await customerService.update(CustomerId, data);
+
+//           const bookingStatusVal = createdBooking.bookingStatus;
+//           const bookingId = createdBooking?._id;
+//           const bookingDate = createdBooking.startDateTime.slice(0, 15);
+//           var dateObj = moment(
+//             createdBooking?.startDateTime,
+//             "ddd MMM DD YYYY hh:mm:A"
+//           );
+//           var time = dateObj.format("hh:mm:A");
+//           const price = servicePrice ? servicePrice : "UnPaid";
+
+//           sendBookingMail(
+//             email,
+//             name,
+//             servicess,
+//             bookingDate,
+//             ServiceDuration,
+//             time,
+//             bookingStatusVal,
+//             bookingId,
+//             price,
+//             description1,
+//               description2,
+//             endsWith
+//           );
+//           if (createdBooking) {
+//             const schedule = await calenderSettingService.find({
+//               addedBy: req._user,
+//             });
+
+//             const Id = schedule?._id;
+//             const obj = {
+//               scheduledData: availableSlot,
+//             };
+
+//             let result = await calenderSettingService.update(Id, obj);
+//           }
+//           const countryCode = createdBooking.selectedCountry.split(" ")[1];
+//           let smsData2 = {
+//             to: `${countryCode}${createdBooking.phoneNumber}`,
+//             text: "Your Booked Service Appointment is confirmed.",
+//           };
+
+//           await smtpSms(smsData2);
+//           return res.status(200).json({
+//             success: true,
+//             message: "Booking added successfully",
+//             data: createdBooking,
+//             status: 200,
+//           });
+//         } else if (gift === null) {
+//           const createCustomers = await customerService.post(obj3);
+//           const obj4 = {
+//             name: benificialName,
+//             email: benificialEmail?.toLowerCase(),
+//             phoneNumber: benificialPhone,
+//             userId: userId,
+//             startDate: startDate,
+//             servicePrice: servicePrice,
+//             endDate: endDate,
+//             startDateTime: startDateTime,
+//             paymentType: paymentType,
+//             endDateTime: endDateTime,
+//             service: service,
+//             bookingType: bookingType,
+//             selectedBenificialCountry: selectedBenificialCountry,
+//             bookingStatus: bookingStatus,
+//             benificialName: "",
+//             benificialEmail: "",
+//             benificialPhone: "",
+//           };
+//           const createCustomer = await customerService.post(obj4);
+//           const newObj = {
+//             ...obj3,
+//             customerId: createCustomers?._id,
+//             bookingFor: createCustomer?._id,
+//             bookedBy: userId,
+//           };
+//           const createdBooking = await bookingService.post(newObj);
+
+//           const data = {
+//             ...obj4,
+//             bookingId: createdBooking?._id,
+//           };
+//           const CustomerId = createCustomer?._id;
+//           let result = await customerService.update(CustomerId, data);
+
+//           const bookingStatusVal = createdBooking.bookingStatus;
+//           const bookingId = createdBooking?._id;
+
+//           const userData = await bookingService.findById(bookingId);
+
+//           const bookingDate = createdBooking.startDateTime.slice(0, 15);
+//           var dateObj = moment(
+//             createdBooking?.startDateTime,
+//             "ddd MMM DD YYYY hh:mm:A"
+//           );
+//           var time = dateObj.format("hh:mm:A");
+//           const price = servicePrice ? servicePrice : "UnPaid";
+
+//           sendBookingMail(
+//             email,
+//             name,
+//             servicess,
+//             bookingDate,
+//             ServiceDuration,
+//             time,
+//             bookingStatusVal,
+//             bookingId,
+//             price,
+//             description1,
+//               description2,
+//             endsWith
+//           );
+//           if (createdBooking) {
+//             const schedule = await calenderSettingService.find({
+//               addedBy: req._user,
+//             });
+
+//             const Id = schedule?._id;
+//             const obj = {
+//               scheduledData: availableSlot,
+//             };
+
+//             let result = await calenderSettingService.update(Id, obj);
+//           }
+//           const countryCode = createdBooking.selectedCountry.split(" ")[1];
+
+//           let smsData2 = {
+//             to: `${countryCode}${createdBooking.phoneNumber}`,
+//             text: "Your Booked Service Appointment is confirmed.",
+//           };
+
+//           await smtpSms(smsData2);
+
+//           return res.status(200).json({
+//             success: true,
+//             message: "Booking added successfully",
+//             data: createdBooking,
+//             status: 200,
+//           });
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     console.log(error)
+//     return res.status(500).json({ code: 500, message: error.message });
+//   }
+// };
+
 const createBooking = async (req, res) => {
   try {
     let {
@@ -36,588 +647,257 @@ const createBooking = async (req, res) => {
       selectedBenificialCountry,
       service,
       scheduleexist,
+      serviceType,
+      numberOfSeats,
+      classes,
+      products,
+      classOccurenceId,
     } = req.body;
     const userId = req._user;
-    
-    if (availableSlot == null || availableSlot == "null") {
+
+    if (
+      serviceType !== "Class" &&
+      (!availableSlot || availableSlot === "null")
+    ) {
       return res.status(500).json({
         success: false,
         message: "Something went wrong",
         status: 500,
       });
     }
-    const serviceVal = [];
-    const serviceData = service.map(async (item) => {
-      serviceVal.push(Mongoose.Types.ObjectId(item));
-    });
-    const singleBooking = await serviceName.find({
-      _id: {
-        $in: serviceVal,
-      },
-    });
-    const serviceDuration = await serviceSetting.find({ addedBy: userId });
-    const serviceValSet = new Set(serviceVal.map((val) => val.toString()));
-    const serviceTime = serviceDuration[0].service;
 
-    let totalHours = 0;
-    let totalMinutes = 0;
+    let durationDescription = "";
+    let businessClassData = [];
+    let servicess = [];
 
-    serviceTime.forEach((service) => {
-      const serviceIdString = service.serviceId.toString();
-      if (serviceValSet.has(serviceIdString)) {
-        totalHours += service.serviceTime.hours;
-        totalMinutes += service.serviceTime.minutes;
+    if (serviceType === "Class") {
+      businessClassData = await businessClassCollection.find({
+        _id: { $in: classes },
+      });
+
+      const classStartTime = moment(
+        businessClassData[0]?.occurrences[0]?.startTime,
+        "hh:mm A"
+      );
+      const classEndTime = moment(
+        businessClassData[0]?.occurrences[0]?.endTime,
+        "hh:mm A"
+      );
+
+      const duration = moment.duration(classEndTime.diff(classStartTime));
+      const hours = Math.floor(duration.asHours());
+      const minutes = duration.minutes();
+      durationDescription = `${hours} hours ${minutes} minutes`;
+
+      servicess = `${businessClassData[0]?.name} class (${numberOfSeats} ${
+        numberOfSeats > 1 ? "seats" : "seat"
+      })`;
+    } else {
+      const serviceVal = service?.map(Mongoose.Types.ObjectId);
+      const singleBooking = await serviceName.find({
+        _id: { $in: serviceVal },
+      });
+
+      const serviceDuration = await serviceSetting.find({ addedBy: userId });
+      const serviceValSet = new Set(serviceVal?.map((val) => val.toString()));
+      const serviceTime = serviceDuration[0]?.service || [];
+
+      let totalHours = 0;
+      let totalMinutes = 0;
+
+      serviceTime.forEach((service) => {
+        const serviceIdString = service.serviceId.toString();
+        if (serviceValSet.has(serviceIdString)) {
+          totalHours += service.serviceTime.hours;
+          totalMinutes += service.serviceTime.minutes;
+        }
+      });
+
+      if (totalMinutes >= 60) {
+        const extraHours = Math.floor(totalMinutes / 60);
+        totalHours += extraHours;
+        totalMinutes -= extraHours * 60;
       }
-    });
-    if (totalMinutes >= 60) {
-      const extraHours = Math.floor(totalMinutes / 60);
-      totalHours += extraHours;
-      totalMinutes -= extraHours * 60;
+
+      durationDescription = `${totalHours} hours ${totalMinutes} minutes`;
+
+      servicess = singleBooking?.map((item) => item?.service);
     }
-    const ServiceDuration = `${totalHours} hours ${totalMinutes} minutes`;
-    const servicess = singleBooking.map((item) => {
-      return item.service;
-    });
+
     const exist = await customerCollection.findOne({
       email: email?.toLowerCase(),
       userId: Mongoose.Types.ObjectId(userId),
     });
-    const obj = {
-      name: name,
+
+    const emailSettingData = await emailSettingService.findOne({
+      addedBy: userId,
+    });
+    const description1 = emailSettingData?.description1 || "";
+    const description2 = emailSettingData?.description2 || "";
+    const endsWith = emailSettingData?.endsWith || "";
+
+    const baseBookingObj = {
+      name,
       email: email?.toLowerCase(),
-      phoneNumber: phoneNumber,
-      userId: userId,
-      startDate: startDate,
-      paymentType: paymentType,
-      endDate: endDate,
-      servicePrice: servicePrice,
-      startDateTime: startDateTime,
-      endDateTime: endDateTime,
-      bookingType: bookingType,
-      selectedCountry: selectedCountry,
-      selectedBenificialCountry: selectedBenificialCountry,
-      service: service,
-      bookingStatus: bookingStatus,
-      benificialName: benificialName,
-      benificialEmail: benificialEmail,
-      benificialPhone: benificialPhone,
-      scheduleexist: scheduleexist,
+      phoneNumber,
+      userId,
+      startDate,
+      paymentType,
+      endDate,
+      servicePrice,
+      startDateTime,
+      endDateTime,
+      bookingType,
+      selectedCountry,
+      selectedBenificialCountry,
+      service,
+      bookingStatus,
+      benificialName,
+      benificialEmail,
+      benificialPhone,
+      scheduleexist,
+      classes,
+      numberOfSeats,
+      serviceType,
     };
 
-    //email setting data
-    const emailSettingData=await emailSettingService.findOne({addedBy:userId})
-    const description1=emailSettingData?.description1 || ""
-    const description2=emailSettingData?.description2 || ""
-    const endsWith=emailSettingData?.endsWith || ""
-
-    console.log(emailSettingData,description1,description2,endsWith," maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    let customerId;
+    let customerDoc;
 
     if (exist) {
-      if (bookingType == "self") {
-        const alreadySchdule = await bookingCollection.find({
-          startDateTime: startDateTime,
-        });
-        if (alreadySchdule?.length > 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Schedule is already booked",
-            status: 400,
-          });
-        }
-        const newObj = {
-          ...obj,
-          customerId: exist?._id,
-          bookingFor: exist?._id,
-          selectedBenificialCountry: selectedBenificialCountry,
-          bookedBy: userId,
-        };
-        const createdBooking = await bookingService.post(newObj);
-        const bookingId = createdBooking?._id;
-        const userData = await bookingService.findById(bookingId);
-        const bookingStatusVal = createdBooking.bookingStatus;
-        const bookingDate = createdBooking.startDateTime.slice(0, 15);
-        var dateObj = moment(
-          createdBooking?.startDateTime,
-          "ddd MMM DD YYYY hh:mm:A"
-        );
-        var time = dateObj.format("hh:mm:A");
-        const price = servicePrice ? servicePrice : "UnPaid";
-        sendBookingMail(
-          email,
-          name,
-          servicess,
-          bookingDate,
-          ServiceDuration,
-          time,
-          bookingStatusVal,
-          bookingId,
-          price,
-          description1,
-          description2,
-          endsWith
-        );
-        if (createdBooking) {
-          const schedule = await calenderSettingService.find({
-            addedBy: req._user,
-          });
-
-          const Id = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-          let result = await calenderSettingService.update(Id, obj);
-        }
-        const countryCode = createdBooking.selectedCountry.split(" ")[1];
-        let smsData = {
-          to: `${countryCode}${createdBooking.phoneNumber}`,
-          text: "Your Booked Service Appointment is confirmed.",
-        };
-        await smtpSms(smsData);
-
-        return res.status(200).json({
-          success: true,
-          message: "Booking added successfully",
-          data: createdBooking,
-          status: 200,
-        });
-      } else if (bookingType === "giftcertificate") {
-        const alreadySchdule = await bookingCollection.find({
-          startDateTime: startDateTime,
-        });
-        if (alreadySchdule.length > 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Schedule is already booked",
-            status: 400,
-          });
-        }
-        if (benificialEmail) {
-          const gift = await customerCollection.findOne({
-            email: benificialEmail,
-            userId: Mongoose.Types.ObjectId(userId),
-          });
-          if (gift) {
-            const newObj = {
-              ...obj,
-              customerId: exist?._id,
-              bookingFor: gift?._id,
-              selectedBenificialCountry: selectedBenificialCountry,
-              bookedBy: userId,
-            };
-            const createdBooking = await bookingService.post(newObj);
-            const bookingId = createdBooking?._id;
-            const userData = await bookingService.findById(bookingId);
-            const bookingStatusVal = createdBooking.bookingStatus;
-            const bookingDate = createdBooking.startDateTime.slice(0, 15);
-            var dateObj = moment(
-              createdBooking?.startDateTime,
-              "ddd MMM DD YYYY hh:mm:A"
-            );
-            var time = dateObj.format("hh:mm:A");
-            const price = servicePrice ? servicePrice : "UnPaid";
-
-            sendBookingMail(
-              email,
-              name,
-              servicess,
-              bookingDate,
-              ServiceDuration,
-              time,
-              bookingStatusVal,
-              bookingId,
-              price,
-              description1,
-              description2,
-              endsWith
-            );
-
-            if (createdBooking) {
-              const schedule = await calenderSettingService.find({
-                addedBy: req._user,
-              });
-
-              const Id = schedule?._id;
-              const obj = {
-                scheduledData: availableSlot,
-              };
-              let result = await calenderSettingService.update(Id, obj);
-            }
-            const countryCode = createdBooking.selectedCountry.split(" ")[1];
-            let smsData = {
-              to: `${countryCode}${createdBooking.phoneNumber}`,
-              text: "Your Booked Service Appointment is confirmed.",
-            };
-
-            await smtpSms(smsData);
-
-            return res.status(200).json({
-              success: true,
-              message: "Booking added successfully",
-              data: createdBooking,
-              status: 200,
-            });
-          } else {
-            const obj4 = {
-              name: benificialName,
-              email: benificialEmail?.toLowerCase(),
-              phoneNumber: benificialPhone,
-              userId: userId,
-              startDate: startDate,
-              servicePrice: servicePrice,
-              endDate: endDate,
-              startDateTime: startDateTime,
-              paymentType: paymentType,
-              endDateTime: endDateTime,
-              service: service,
-              bookingType: bookingType,
-              selectedBenificialCountry: selectedBenificialCountry,
-              bookingStatus: bookingStatus,
-              benificialName: "",
-              benificialEmail: "",
-              benificialPhone: "",
-            };
-            const createCustomer = await customerService.post(obj4);
-            const newObj = {
-              ...obj,
-              customerId: exist?._id,
-              bookingFor: createCustomer?._id,
-              selectedBenificialCountry: selectedBenificialCountry,
-              bookedBy: userId,
-            };
-            const createdBooking = await bookingService.post(newObj);
-            const bookingId = createdBooking?._id;
-            const userData = await bookingService.findById(bookingId);
-            const bookingStatusVal = createdBooking.bookingStatus;
-            const bookingDate = createdBooking.startDateTime.slice(0, 15);
-            var dateObj = moment(
-              createdBooking?.startDateTime,
-              "ddd MMM DD YYYY hh:mm:A"
-            );
-            var time = dateObj.format("hh:mm:A");
-            const price = servicePrice ? servicePrice : "UnPaid";
-
-            sendBookingMail(
-              email,
-              name,
-              servicess,
-              bookingDate,
-              ServiceDuration,
-              time,
-              bookingStatusVal,
-              bookingId,
-              price,
-              description1,
-              description2,
-              endsWith
-            );
-            if (createdBooking) {
-              const schedule = await calenderSettingService.find({
-                addedBy: req._user,
-              });
-
-              const Id = schedule?._id;
-              const obj = {
-                scheduledData: availableSlot,
-              };
-              let result = await calenderSettingService.update(Id, obj);
-            }
-            const countryCode = createdBooking.selectedCountry.split(" ")[1];
-
-            let smsData = {
-              to: `${countryCode}${createdBooking.phoneNumber}`,
-              text: "Your Booked Service Appointment is confirmed.",
-            };
-
-            await smtpSms(smsData);
-
-            return res.status(200).json({
-              success: true,
-              message: "Booking added successfully",
-              data: createdBooking,
-              status: 200,
-            });
-          }
-        }
-      }
+      customerId = exist._id;
     } else {
-      const obj3 = {
-        name: name,
+      customerDoc = await customerService.post({
+        name,
         email: email?.toLowerCase(),
-        phoneNumber: phoneNumber,
-        userId: userId,
-        startDate: startDate,
-        servicePrice: servicePrice,
-        endDate: endDate,
-        startDateTime: startDateTime,
-        paymentType: paymentType,
-        endDateTime: endDateTime,
-        service: service,
-        bookingType: bookingType,
-        bookingStatus: bookingStatus,
-        benificialName: benificialName,
-        selectedCountry: selectedCountry,
-        selectedBenificialCountry: selectedBenificialCountry,
-        benificialEmail: benificialEmail,
-        benificialPhone: benificialPhone,
-      };
-      if (bookingType == "self") {
-        const alreadySchdule = await bookingCollection.find({
-          startDateTime: startDateTime,
-        });
-        if (alreadySchdule.length > 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Schedule is already booked",
-            status: 400,
-          });
-        }
-        const createCustomer = await customerService.post(obj3);
-        const newObj = {
-          ...obj,
-          customerId: createCustomer?._id,
-          bookingFor: createCustomer?._id,
-          selectedBenificialCountry: selectedBenificialCountry,
-          bookedBy: userId,
-        };
-
-        const createdBooking = await bookingService.post(newObj);
-        const data = {
-          ...obj3,
-          bookingId: createdBooking?._id,
-        };
-        const CustomerId = createCustomer?._id;
-        let result = await customerService.update(CustomerId, data);
-
-        const bookingStatusVal = createdBooking.bookingStatus;
-        const bookingId = createdBooking?._id;
-        const userData = await bookingService.findById(bookingId);
-        const bookingDate = createdBooking.startDateTime.slice(0, 15);
-        var dateObj = moment(
-          createdBooking?.startDateTime,
-          "ddd MMM DD YYYY hh:mm:A"
-        );
-        var time = dateObj.format("hh:mm:A");
-        const price = servicePrice ? servicePrice : "UnPaid";
-
-        sendBookingMail(
-          email,
-          name,
-          servicess,
-          bookingDate,
-          ServiceDuration,
-          time,
-          bookingStatusVal,
-          bookingId,
-          price,
-          description1,
-              description2,
-          endsWith
-        );
-        if (createdBooking) {
-          const schedule = await calenderSettingService.find({
-            addedBy: req._user,
-          });
-
-          const Id = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-          let result = await calenderSettingService.update(Id, obj);
-        }
-        const countryCode = createdBooking.selectedCountry.split(" ")[1];
-        let smsData = {
-          to: `${countryCode}${createdBooking.phoneNumber}`,
-          text: "Your Booked Service Appointment is confirmed.",
-        };
-
-        await smtpSms(smsData);
-
-        return res.status(200).json({
-          success: true,
-          message: "Booking added successfully",
-          data: createdBooking,
-          status: 200,
-        });
-      } else if (bookingType == "giftcertificate") {
-        const alreadySchdule = await bookingCollection.find({
-          startDateTime: startDateTime,
-        });
-        if (alreadySchdule.length > 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Schedule is already created",
-            status: 400,
-          });
-        }
-        const gift = await customerCollection.findOne({
-          email: benificialEmail,
-          userId: Mongoose.Types.ObjectId(userId),
-        });
-
-        if (gift) {
-          const createCustomer = await customerService.post(obj3);
-
-          const newObj = {
-            ...obj,
-            customerId: createCustomer?._id,
-            bookingFor: gift?._id,
-            selectedBenificialCountry: selectedBenificialCountry,
-            bookedBy: userId,
-          };
-          const createdBooking = await bookingService.post(newObj);
-          const data = {
-            ...obj3,
-            bookingId: createdBooking?._id,
-          };
-          const CustomerId = createCustomer?._id;
-          let result = await customerService.update(CustomerId, data);
-
-          const bookingStatusVal = createdBooking.bookingStatus;
-          const bookingId = createdBooking?._id;
-          const bookingDate = createdBooking.startDateTime.slice(0, 15);
-          var dateObj = moment(
-            createdBooking?.startDateTime,
-            "ddd MMM DD YYYY hh:mm:A"
-          );
-          var time = dateObj.format("hh:mm:A");
-          const price = servicePrice ? servicePrice : "UnPaid";
-
-          sendBookingMail(
-            email,
-            name,
-            servicess,
-            bookingDate,
-            ServiceDuration,
-            time,
-            bookingStatusVal,
-            bookingId,
-            price,
-            description1,
-              description2,
-            endsWith
-          );
-          if (createdBooking) {
-            const schedule = await calenderSettingService.find({
-              addedBy: req._user,
-            });
-
-            const Id = schedule?._id;
-            const obj = {
-              scheduledData: availableSlot,
-            };
-
-            let result = await calenderSettingService.update(Id, obj);
-          }
-          const countryCode = createdBooking.selectedCountry.split(" ")[1];
-          let smsData2 = {
-            to: `${countryCode}${createdBooking.phoneNumber}`,
-            text: "Your Booked Service Appointment is confirmed.",
-          };
-
-          await smtpSms(smsData2);
-          return res.status(200).json({
-            success: true,
-            message: "Booking added successfully",
-            data: createdBooking,
-            status: 200,
-          });
-        } else if (gift === null) {
-          const createCustomers = await customerService.post(obj3);
-          const obj4 = {
-            name: benificialName,
-            email: benificialEmail?.toLowerCase(),
-            phoneNumber: benificialPhone,
-            userId: userId,
-            startDate: startDate,
-            servicePrice: servicePrice,
-            endDate: endDate,
-            startDateTime: startDateTime,
-            paymentType: paymentType,
-            endDateTime: endDateTime,
-            service: service,
-            bookingType: bookingType,
-            selectedBenificialCountry: selectedBenificialCountry,
-            bookingStatus: bookingStatus,
-            benificialName: "",
-            benificialEmail: "",
-            benificialPhone: "",
-          };
-          const createCustomer = await customerService.post(obj4);
-          const newObj = {
-            ...obj3,
-            customerId: createCustomers?._id,
-            bookingFor: createCustomer?._id,
-            bookedBy: userId,
-          };
-          const createdBooking = await bookingService.post(newObj);
-
-          const data = {
-            ...obj4,
-            bookingId: createdBooking?._id,
-          };
-          const CustomerId = createCustomer?._id;
-          let result = await customerService.update(CustomerId, data);
-
-          const bookingStatusVal = createdBooking.bookingStatus;
-          const bookingId = createdBooking?._id;
-
-          const userData = await bookingService.findById(bookingId);
-
-          const bookingDate = createdBooking.startDateTime.slice(0, 15);
-          var dateObj = moment(
-            createdBooking?.startDateTime,
-            "ddd MMM DD YYYY hh:mm:A"
-          );
-          var time = dateObj.format("hh:mm:A");
-          const price = servicePrice ? servicePrice : "UnPaid";
-
-          sendBookingMail(
-            email,
-            name,
-            servicess,
-            bookingDate,
-            ServiceDuration,
-            time,
-            bookingStatusVal,
-            bookingId,
-            price,
-            description1,
-              description2,
-            endsWith
-          );
-          if (createdBooking) {
-            const schedule = await calenderSettingService.find({
-              addedBy: req._user,
-            });
-
-            const Id = schedule?._id;
-            const obj = {
-              scheduledData: availableSlot,
-            };
-
-            let result = await calenderSettingService.update(Id, obj);
-          }
-          const countryCode = createdBooking.selectedCountry.split(" ")[1];
-
-          let smsData2 = {
-            to: `${countryCode}${createdBooking.phoneNumber}`,
-            text: "Your Booked Service Appointment is confirmed.",
-          };
-
-          await smtpSms(smsData2);
-
-          return res.status(200).json({
-            success: true,
-            message: "Booking added successfully",
-            data: createdBooking,
-            status: 200,
-          });
-        }
-      }
+        phoneNumber,
+        userId,
+        startDate,
+        servicePrice,
+        endDate,
+        startDateTime,
+        paymentType,
+        endDateTime,
+        service,
+        bookingType,
+        selectedBenificialCountry,
+        bookingStatus,
+        benificialName,
+        benificialEmail,
+        benificialPhone,
+        selectedCountry,
+      });
+      customerId = customerDoc?._id;
     }
+
+    const alreadySchedule = await bookingCollection.find({
+      startDateTime,
+    });
+    if (alreadySchedule.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Schedule is already booked",
+        status: 400,
+      });
+    }
+
+    const newBookingObj = {
+      ...baseBookingObj,
+      customerId,
+      bookingFor: customerId,
+      selectedBenificialCountry,
+      bookedBy: userId,
+    };
+
+    const createdBooking = await bookingService.post(newBookingObj);
+    const bookingId = createdBooking?._id;
+    const bookingStatusVal = createdBooking?.bookingStatus;
+    const bookingDate = createdBooking?.startDateTime.slice(0, 15);
+    const dateObj = moment(
+      createdBooking?.startDateTime,
+      "ddd MMM DD YYYY hh:mm:A"
+    );
+    const time = dateObj.format("hh:mm:A");
+    const price = servicePrice || "UnPaid";
+
+    sendBookingMail(
+      email,
+      name,
+      servicess,
+      bookingDate,
+      durationDescription,
+      time,
+      bookingStatusVal,
+      bookingId,
+      price,
+      description1,
+      description2,
+      endsWith
+    );
+
+    if (serviceType === "Class") {
+      const businessClassId = businessClassData[0]?._id;
+      await businessClassService.bookClassOccurrence(
+        businessClassId,
+        classOccurenceId,
+        numberOfSeats
+      );
+    } else {
+      const schedule = await calenderSettingService.find({
+        addedBy: userId,
+      });
+      const Id = schedule?._id;
+      const obj = {
+        scheduledData: availableSlot,
+      };
+      await calenderSettingService.update(Id, obj);
+    }
+
+    if (products?.length > 0) {
+      const productData = await Promise.all(
+        products.map(async (item) => {
+          const inventory = await inventoryService.getInventoryById(
+            item?.productId
+          );
+          const updatedStock = inventory?.productstock - item?.quantity;
+          await inventoryService.update(item?.productId, {
+            productstock: updatedStock,
+          });
+          return {
+            addedBy: userId,
+            userId: customerId,
+            inventoryId: item?.productId,
+            price: item?.price,
+            quantity: item?.quantity,
+          };
+        })
+      );
+      const createdProducts = await productService.createMultiple(productData);
+      await bookingService.update(bookingId, {
+        products: createdProducts?.map((product) => product?._id),
+      });
+    }
+
+    const countryCode = createdBooking?.selectedCountry?.split(" ")[1];
+    const smsData = {
+      to: `${countryCode}${createdBooking?.phoneNumber}`,
+      text: "Your Booked Service Appointment is confirmed.",
+    };
+
+    await smtpSms(smsData);
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking added successfully",
+      data: createdBooking,
+      status: 200,
+    });
   } catch (error) {
-    console.log(error)
-    return res.status(500).json({ code: 500, message: error.message });
+    console.error(error);
+    return res.status(500).json({
+      code: 500,
+      message: error.message,
+    });
   }
 };
 
@@ -1055,6 +1335,8 @@ const editBooking = async (req, res, next) => {
       "eventColor",
       "show",
       "checkinDate",
+      "startDateTime",
+      "classes",
     ]);
     let result = await bookingService.update(
       { _id: Id },
@@ -1323,7 +1605,16 @@ const bookingCancel = async (req, res, next) => {
 
 const bookingEdit = async (req, res, next) => {
   try {
-    const { scheduleTime, prevSchedule, availableSlot } = req.body;
+    const {
+      scheduleTime,
+      prevSchedule,
+      availableSlot,
+      serviceType,
+      classes,
+      classOccurenceId,
+      numberOfSeats,
+    } = req.body;
+
     const Id = req.params.id;
     if (!Id) {
       return res.status(401).json({
@@ -1333,7 +1624,10 @@ const bookingEdit = async (req, res, next) => {
       });
     }
 
-    if (availableSlot == null || availableSlot == "null") {
+    if (
+      serviceType !== "Class" &&
+      (!availableSlot || availableSlot === "null")
+    ) {
       return res.status(500).json({
         success: false,
         message: "Something went wrong",
@@ -1358,223 +1652,109 @@ const bookingEdit = async (req, res, next) => {
       "startDateTime",
       "lng",
       "lat",
+      "numberOfSeats",
+      "classes",
     ]);
-    const alreadySchdule = await bookingCollection.findOne({ _id: Id });
-    const AllSchdule = await bookingCollection.find(
-      { startDateTime: req?.body?.startDateTime  , 
-      _id: { $ne: Id }
-      }
-    );
-    if (AllSchdule.length > 0) {
+
+    const existingBooking = await bookingCollection.findOne({ _id: Id });
+
+    const conflictSchedule = await bookingCollection.find({
+      startDateTime: req?.body?.startDateTime,
+      _id: { $ne: Id },
+    });
+
+    if (conflictSchedule.length > 0) {
       return res.status(400).json({
         success: false,
         message: "Schedule is already booked",
         status: 400,
       });
     }
-    // if (alreadySchdule?.startDateTime == req?.body?.startDateTime) {
-      const timingExistornot = await bookingCollection.find({
-        _id: Id,
+
+    const result = await bookingService.update(
+      { _id: Id },
+      { $set: { ...data } },
+      { fields: { _id: 1 }, new: true }
+    );
+
+    if (!result) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "Booking not found",
       });
+    }
 
-      let result = await bookingService.update(
-        {
-          _id: Id,
-        },
-        { $set: { ...data } },
-        { fields: { _id: 1 }, new: true }
-      );
-      if (
-        req.body.scheduleexist == true &&
-        timingExistornot[0]?.scheduleexist == true
-      ) {
-        if (result) {
-          const schedule = await calenderSettingService.find({
-            addedBy: req._user,
-          });
+    if (serviceType === "Class" && classes?.length > 0) {
+      const newSeats = numberOfSeats;
+      const oldSeats = existingBooking?.numberOfSeats || 0;
 
-          const scheduleId = schedule?._id;
-          const obj = {
+      if (oldSeats !== newSeats) {
+        await businessClassService.updateClassOccurrence(
+          classes[0],
+          classOccurenceId,
+          oldSeats,
+          newSeats
+        );
+      }
+    }
+
+    if (serviceType !== "Class") {
+      if (result?.scheduleexist) {
+        const schedule = await calenderSettingService.find({
+          addedBy: req._user,
+        });
+
+        const scheduleId = schedule?._id;
+
+        if (scheduleId) {
+          await calenderSettingService.update(scheduleId, {
             scheduledData: availableSlot,
+          });
+        }
+
+        if (scheduleTime && scheduleTime !== "null") {
+          const inputDate = moment(prevSchedule, "ddd MMM DD YYYY hh:mm:A");
+          const startDate = inputDate.format("MMM D, YYYY");
+          const startTime = inputDate.format("hh:mm:A");
+          const endTime = inputDate
+            .clone()
+            .add(30, "minutes")
+            .format("hh:mm:A");
+
+          const newSlot = {
+            startDate,
+            startTime,
+            endTime,
           };
 
-          let updatedSchedule = await calenderSettingService.update(
-            scheduleId,
-            obj
+          const index = schedule.scheduledData.findIndex(
+            (slot) => slot.startTime > newSlot.startTime
           );
-        }
 
-        if (scheduleTime != "null") {
-          if (result?.scheduleexist == true) {
-            const inputDate = moment(prevSchedule, "ddd MMM DD YYYY hh:mm:A");
-            const startDate = inputDate.format("MMM D, YYYY");
-            const startTime = inputDate.format("hh:mm:A");
-            const endTime = inputDate
-              .clone()
-              .add(30, "minutes")
-              .format("hh:mm:A");
-            const obj = {
-              startDate: startDate,
-              startTime: startTime,
-              endTime: endTime,
-            };
-
-            const schedule = await calenderSettingService.find({
-              addedBy: req._user,
-            });
-
-            const index = schedule.scheduledData.findIndex(
-              (slot) => slot.startTime > obj.startTime
-            );
-
-            if (index === -1) {
-              schedule.scheduledData.push(obj);
-            } else {
-              schedule.scheduledData.splice(index, 0, obj);
-            }
-
-            const scheduleId = schedule?._id;
-            const newObj = {
-              scheduledData: schedule.scheduledData,
-            };
-
-            let updatedSchedule = await calenderSettingService.update(
-              scheduleId,
-              newObj
-            );
+          if (index === -1) {
+            schedule.scheduledData.push(newSlot);
+          } else {
+            schedule.scheduledData.splice(index, 0, newSlot);
           }
-        }
-      } else if (
-        req.body.scheduleexist == false &&
-        timingExistornot[0]?.scheduleexist == true
-      ) {
-        if (result) {
-          const schedule = await calenderSettingService.find({
-            addedBy: req._user,
+
+          await calenderSettingService.update(scheduleId, {
+            scheduledData: schedule.scheduledData,
           });
-
-          const scheduleId = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-         
-          let updatedSchedule = await calenderSettingService.update(
-            scheduleId,
-            obj
-          );
-        }
-
-        if (scheduleTime != "null") {
-          if (result?.scheduleexist == true) {
-            const inputDate = moment(prevSchedule, "ddd MMM DD YYYY hh:mm:A");
-            const startDate = inputDate.format("MMM D, YYYY");
-            const startTime = inputDate.format("hh:mm:A");
-            const endTime = inputDate
-              .clone()
-              .add(30, "minutes")
-              .format("hh:mm:A");
-            const obj = {
-              startDate: startDate,
-              startTime: startTime,
-              endTime: endTime,
-            };
-
-            const schedule = await calenderSettingService.find({
-              addedBy: req._user,
-            });
-
-            const index = schedule.scheduledData.findIndex(
-              (slot) => slot.startTime > obj.startTime
-            );
-
-            if (index === -1) {
-              schedule.scheduledData.push(obj);
-            } else {
-              schedule.scheduledData.splice(index, 0, obj);
-            }
-
-            const scheduleId = schedule?._id;
-            const newObj = {
-              scheduledData: schedule.scheduledData,
-            };
-
-            let updatedSchedule = await calenderSettingService.update(
-              scheduleId,
-              newObj
-            );
-          }
-        }
-      } else if (
-        req.body.scheduleexist == true &&
-        timingExistornot[0]?.scheduleexist == false
-      ) {
-        if (result) {
-          const schedule = await calenderSettingService.find({
-            addedBy: req._user,
-          });
-
-          const scheduleId = schedule?._id;
-          const obj = {
-            scheduledData: availableSlot,
-          };
-
-          let updatedSchedule = await calenderSettingService.update(
-            scheduleId,
-            obj
-          );
-        }
-
-        if (scheduleTime != "null") {
-          if (result?.scheduleexist == true) {
-            const inputDate = moment(prevSchedule, "ddd MMM DD YYYY hh:mm:A");
-            const startDate = inputDate.format("MMM D, YYYY");
-            const startTime = inputDate.format("hh:mm:A");
-            const endTime = inputDate
-              .clone()
-              .add(30, "minutes")
-              .format("hh:mm:A");
-            const obj = {
-              startDate: startDate,
-              startTime: startTime,
-              endTime: endTime,
-            };
-
-            const schedule = await calenderSettingService.find({
-              addedBy: req._user,
-            });
-
-            const index = schedule.scheduledData.findIndex(
-              (slot) => slot.startTime > obj.startTime
-            );
-
-            if (index === -1) {
-              schedule.scheduledData.push(obj);
-            } else {
-              schedule.scheduledData.splice(index, 0, obj);
-            }
-
-            const scheduleId = schedule?._id;
-            const newObj = {
-              scheduledData: schedule.scheduledData,
-            };
-
-            let updatedSchedule = await calenderSettingService.update(
-              scheduleId,
-              newObj
-            );
-          }
         }
       }
-      return res.status(200).json({
-        status: 200,
-        success: true,
-        data: result,
-        message: "Booking updated successfully",
-      });
-    // }
+    }
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: result,
+      message: "Booking updated successfully",
+    });
   } catch (error) {
-    return res.status(401).json({
-      status: 401,
+    console.error(error);
+    return res.status(500).json({
+      status: 500,
       success: false,
       message: error.message,
     });
@@ -1623,28 +1803,23 @@ const multiDeleteBooking = async (req, res) => {
         const time2 = new Date(`2000/01/01 ${slot2.startTime}`);
         return time1 - time2;
       };
-      if(schedule){ 
+      if (schedule) {
         schedule?.scheduledData.push(...updatedSlots);
         schedule?.scheduledData.sort(compareSlots);
-  
+
         const Id = schedule?._id;
         const newObj = {
           scheduledData: schedule?.scheduledData,
         };
-         let result = await calenderSettingService.update(Id, newObj);
+        let result = await calenderSettingService.update(Id, newObj);
       }
-
-
-  
-     
 
       return res.status(200).json({
         success: true,
         message: "Deleted Successfully",
         data: response,
       });
-    }
-     else {
+    } else {
       return res.status(400).json({
         success: false,
         message: "No data Found",

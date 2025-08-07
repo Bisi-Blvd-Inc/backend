@@ -52,7 +52,7 @@ const stripePriceList = async () => {
 
 const stripeFinalList = async () => {
   try {
-    const products = await stripe.products.list({ active: true });
+    const products = await stripe.products.list({ active: true, limit: 100});
     const productData = products.data
       .filter(product => product.name !== 'Bisi')
       .filter(product => product.default_price !== null);
