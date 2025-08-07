@@ -4,14 +4,18 @@ const nodemailer = require("nodemailer");
 const mail = require("../utilities/mail");
 require("dotenv").config();
 
-const generateToken = (data) => {
+const generateToken = (data, exp) => {
   const userData = {
     _id: data._id,
   };
   const payload = {
     userData,
-    iat: Math.floor(Date.now() / 1000) - 30,
   };
+  if (exp) {
+    payload.exp = exp // expires in 48 hours
+  } else {
+    payload.iat = Math.floor(Date.now() / 1000) - 30;
+  }
   try {
     const token = jwt.sign(payload, process.env.FRONTEND_JWT_SECRET);
     return token;
@@ -91,7 +95,7 @@ const sendForgotPasswordMailForFrontend = async (values) => {
       email,
       subject: "Forgot Password",
       text: "Node.js testing mail for GeeksforGeeks",
-      html: ` <a>please Click here  to reset your password</a>
+      html: ` <a>please Click here to reset your password</a>
       
       <a href = ${process.env.CLIENT_URL_FRONT}/resetPassword/${token}>Click Here</a>
       `,
