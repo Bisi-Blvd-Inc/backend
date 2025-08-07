@@ -95,7 +95,7 @@ const sendForgotPasswordMailForFrontend = async (values) => {
       email,
       subject: "Forgot Password",
       text: "Node.js testing mail for GeeksforGeeks",
-      html: ` <a>please Click here to reset your password</a>
+      html: ` <a>Please Click here to reset your password. It expires in 48 hours.</a>
       
       <a href = ${process.env.CLIENT_URL_FRONT}/resetPassword/${token}>Click Here</a>
       `,
