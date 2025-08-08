@@ -69,16 +69,20 @@ const transporter = nodemailer.createTransport({
 
 const sendForgotPasswordMail = async (values) => {
   const { token, email, name } = values;
+  console.load(`token: ${token} email: ${email} name: ${name}`);
   const siteUrl = `${process.env.CLIENT_URL}/resetPassword/${token}`;
+  console.load(`siteUrl: ${siteUrl}`);
   const map = new Map();
   map.set("site_url", siteUrl);
   map.set("name", name);
+
+  const html = await buildHtmlFromTemplate("./mail_template/resetPassword.html", map);
 
   let mailOptions = {
     from: process.env.MAILER_EMAIL,
     to: email,
     subject: "Forgot Password",
-    html: buildHtmlFromTemplate("./mail_template/resetPassword.html", map),
+    html: html,
   };
 
   transporter.sendMail(mailOptions, (error, result) => {

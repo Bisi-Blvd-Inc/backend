@@ -90,8 +90,10 @@ const signup = async (req, res) => {
 const forgotPassword = async (req, res) => {
     try {
         const {email} = req.body;
+        console.log("grabbing the user");
         let user = await authService.findOne({email});
         let firstName = user.firstName;
+        console.log(`got user ${firstName}`);
 
         if (!user) {
             return res.status(404).json({
