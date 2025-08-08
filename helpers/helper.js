@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const mail = require("../utilities/mail");
+const fs = require("fs").promises;
 require("dotenv").config();
 
 const generateToken = (data, exp) => {
@@ -67,15 +68,17 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendForgotPasswordMail = async (values) => {
-  const { token, email } = values;
+  const { token, email, name } = values;
+  const siteUrl = `${process.env.CLIENT_URL}/resetPassword/${token}`;
+  const map = new Map();
+  map.set("site_url", siteUrl);
+  map.set("name", name);
+
   let mailOptions = {
     from: process.env.MAILER_EMAIL,
     to: email,
     subject: "Forgot Password",
-    text: "Node.js testing mail for GeeksforGeeks",
-    html: ` <a>please Click here  to reset your password</a>
-    <a href = ${process.env.CLIENT_URL}/resetPassword/${token}>Click Here</a>
-    `,
+    html: buildHtmlFromTemplate("./mail_template/resetPassword.html", map),
   };
 
   transporter.sendMail(mailOptions, (error, result) => {
@@ -106,6 +109,14 @@ const sendForgotPasswordMailForFrontend = async (values) => {
   }
 
 };
+
+const buildHtmlFromTemplate = async (templatePath, variableMap) => {
+  let template = await fs.readFile(templatePath, "utf8");
+  for( const [key, value] of variableMap) {
+     template = template.replaceAll(`<%= ${key} %>`, value);
+  }
+  return template;
+}
 
 const sendMailForUser = async (values) => {
   const { token, email, password } = values;

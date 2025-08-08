@@ -91,6 +91,7 @@ const forgotPassword = async (req, res) => {
     try {
         const {email} = req.body;
         let user = await authService.findOne({email});
+        let firstName = user.firstName;
 
         if (!user) {
             return res.status(404).json({
@@ -105,7 +106,7 @@ const forgotPassword = async (req, res) => {
         }
 
         const token = await generateToken(user, Math.floor(Date.now() / 1000) + (60 * 60 * 48));
-        await sendForgotPasswordMail({token, email});
+        await sendForgotPasswordMail({token, email, firstName});
 
         return res.status(200).json({
             message: "Email sent successfully",
