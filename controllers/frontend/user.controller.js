@@ -2154,22 +2154,31 @@ const addCard = async (req, res) => {
     const { cardId, month, year, tokenCard, last4Digits, userId, email, name } =
       req.body;
 
+    console.log("looking up user");
     const salonOwner = await userCollection.findById(userId);
+    console.log("found user");
 
+    console.log("creating up stripe instance");
     const stripeInstance = stripe(salonOwner.secretKey);
+    console.log("created stripe instance");
 
+    console.log(`searching for customer with email ${email}`);
     let customerId = "";
     const customers = await stripeInstance.customers.list({
       email: email,
     });
+    console.log(`search results: ${customers.data.length}`);
 
     if (!customers.data || customers.data.length === 0) {
+      console.log("creating customer");
       const customer = await stripeInstance.customers.create({
         name: name,
         email: email,
       });
       customerId = customer.id;
+      console.log("customer created");
     } else {
+      console.log("found customer")
       customerId = customers.data[0].id;
     }
 
@@ -2187,19 +2196,23 @@ const addCard = async (req, res) => {
       });
     }
 
+    console.log("creating card");
     const paymentMethod = await stripeInstance.paymentMethods.create({
       type: "card",
       card: {
         token: tokenCard,
       },
     });
+    console.log("created card");
 
+    console.log("attaching card to customer");
     const attachcard = await stripeInstance.paymentMethods.attach(
       paymentMethod.id,
       {
         customer: customerId,
       }
     );
+    console.log("attached card to customer");
 
     return res.status(200).json({
       success: true,
@@ -2208,6 +2221,7 @@ const addCard = async (req, res) => {
       message: "card added successfully",
     });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
       success: false,
       message: err.message,
