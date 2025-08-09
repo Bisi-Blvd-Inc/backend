@@ -236,7 +236,7 @@ const forgotPassword = async (req, res) => {
         message: "Please enter the registered email adddress",
       });
     } else {
-      const token = await generateToken(result1);
+      const token = await generateToken(result1, Math.floor(Date.now() / 1000) + (60 * 60 * 48));
       await sendForgotPasswordMailForFrontend({
         token: token,
         email: email,
