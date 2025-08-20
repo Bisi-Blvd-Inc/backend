@@ -7,6 +7,7 @@ const {
 } = require("../../helpers/marketingConnector");
 const { sendActivationMail } = require("../../helpers/users");
 const { v4: uuidv4 } = require("uuid");
+const authService = require("../../services/auth.services");
 
 const createEnterprise = async (req, res) => {
   try {
