@@ -3,11 +3,7 @@ const UserCollection = require("../models/user.js");
 const { v4: uuidv4 } = require("uuid");
 
 const createEnterprise = async (data) => {
-  const key = uuidv4();
-  const enterprise = new EnterpriseCollection({
-    ...data,
-    userKeys: [{ key: key }],
-  });
+  const enterprise = new EnterpriseCollection(data);
   return await enterprise.save();
 };
 

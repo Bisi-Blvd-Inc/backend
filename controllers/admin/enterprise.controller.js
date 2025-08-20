@@ -1,15 +1,81 @@
 const enterpriseService = require("../../services/enterprise.service");
 const enterpriseCollection = require("../../models/enterprise");
 const { Parser } = require("json2csv");
+const bcrypt = require("bcrypt");
+const {
+  sendLeadConnectorWebhook,
+} = require("../../helpers/marketingConnector");
+const { sendActivationMail } = require("../../helpers/users");
+const { v4: uuidv4 } = require("uuid");
 
 const createEnterprise = async (req, res) => {
   try {
-    const enterprise = await enterpriseService.createEnterprise(req.body);
-    return res.status(200).json({
-      message: "Enterprise created successfully",
-      success: true,
-      data: enterprise,
-    });
+    const {
+      enterpriseName,
+      contactName,
+      phone,
+      email,
+      businessType,
+      password,
+    } = req.body;
+
+    const user = await authService.findOne({ email, isDeleted: false });
+    if (
+      (user?.HistoryActivateStatus === true && user?.status === 1) ||
+      user?.status === 1 ||
+      (user?.HistoryActivateStatus === false && user?.status === 0)
+    ) {
+      return res.status(400).json({ message: "Email Already Exists" });
+    }
+
+    if (password) {
+      bcrypt.hash(password.toString(), 10, async (err, hash) => {
+        try {
+          if (err) {
+            return res.status(400).json({ error: "Something went wrong" });
+          }
+
+          const newUser = {
+            email,
+            password: hash,
+            firstName: contactName,
+            businessName: enterpriseName,
+            phone,
+            businessType,
+            withEnterprise: true,
+            isEnterpriseAdmin: true,
+            role: 1,
+          };
+          const createdUser = await authService.post(newUser);
+
+          sendLeadConnectorWebhook(createdUser);
+          await sendActivationMail(email);
+
+          const enterprise = await enterpriseService.createEnterprise({
+            ...req.body,
+            password: hash,
+            userKeys: [
+              {
+                key: uuidv4(),
+                user: createdUser._id,
+              },
+            ],
+          });
+
+          return res.status(200).json({
+            success: true,
+            message: "Enterprise created successfully. Please verify email!",
+            data: enterprise,
+          });
+        } catch (error) {
+          return res.status(500).json({
+            message: error.message,
+            data: {},
+            success: false,
+          });
+        }
+      });
+    }
   } catch (err) {
     return res.status(500).json({
       message: "Internal Server Error",
@@ -131,11 +197,13 @@ const addEnterpriseKey = async (req, res) => {
 
 const deleteEnterpriseKey = async (req, res) => {
   try {
-    const { updatedEnterprise, userDeleted } = await enterpriseService.deleteEnterpriseKey(req.params.key);
+    const { updatedEnterprise, userDeleted } =
+      await enterpriseService.deleteEnterpriseKey(req.params.key);
     if (updatedEnterprise) {
       return res.status(200).json({
-        message: `License key deleted successfully${userDeleted ? " and user removed" : ""
-          }`,
+        message: `License key deleted successfully${
+          userDeleted ? " and user removed" : ""
+        }`,
         success: true,
         data: updatedEnterprise,
       });

@@ -61,6 +61,7 @@ var userSchema = new Schema(
     HistoryActivateStatus : { type: Boolean, default: true },
     DeactivateAccountDate : { type: String},
     withEnterprise: { type: Boolean, default: false },
+    isEnterpriseAdmin: { type: Boolean, default: false },
   },
 
   { collection: "users", timestamps: { createdAt: true, updatedAt: true } }
