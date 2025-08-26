@@ -45,7 +45,7 @@ const createEnterprise = async (req, res) => {
             businessType,
             withEnterprise: true,
             isEnterpriseAdmin: true,
-            role: 1,
+            role: 2,
           };
           const createdUser = await authService.post(newUser);
 
