@@ -50,5 +50,24 @@ router.put(
 );
 router.get("/getUser/:id", authController.getUser);
 router.get("/getUserByEmail/:email", authController.getUserByEmail);
+router.post(
+  "/booking-signup",
+  [
+    check("firstName")
+      .not()
+      .isEmpty()
+      .withMessage("name field is required"),
+
+    check("email").not().isEmpty().withMessage("email field is required"),
+    check("password").not().isEmpty().withMessage("password field is required"),
+    check("passwordConfirmation").not().isEmpty().withMessage("Password confirmation is required")
+  ],
+  validator,
+  authController.bookingClientSignUp
+);
+router.post("/booking-forgot-password",
+    check("email").not().isEmpty().withMessage("email field is required"),
+    validator,
+    authController.bookingClientForgotPassword);
 
 module.exports = router;

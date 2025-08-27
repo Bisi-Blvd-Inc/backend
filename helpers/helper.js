@@ -107,6 +107,27 @@ const sendForgotPasswordMailForFrontend = async (values) => {
 
 };
 
+const sendForgotPasswordMailForBookingClient = async (values) => {
+
+
+  try {
+    const { token, email } = values;
+    let mailOptions = {
+      email,
+      subject: "Forgot Password",
+      text: "Node.js testing mail for GeeksforGeeks",
+      html: ` <a>Please Click here to reset your password. It expires in 48 hours.</a>
+ 
+      <a href = ${process.env.BOOKING_APP_SCHEME}://reset-password/${token}>Click Here</a>
+      `,
+    };
+    return mail.sendMailerHtml(mailOptions);
+  } catch (error) {
+    throw error;
+  }
+
+};
+
 const sendMailForUser = async (values) => {
   const { token, email, password } = values;
   let mailOptions = {
@@ -134,6 +155,16 @@ const sendMailForUser = async (values) => {
     }
   });
 };
+
+const getToken = (req)  => {
+  let token;
+  // 1. Check if the authorization header exists and starts with "Bearer "
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    // 2. Split the header string by the space and get the second part (the token)
+    token = req.headers.authorization.split(' ')[1];
+  }
+  return token;
+}
 module.exports = {
   verifyJWT,
   generateToken,
@@ -141,5 +172,7 @@ module.exports = {
   sendForgotPasswordMail,
   generateTokenForUSer,
   sendForgotPasswordMailForFrontend,
+  sendForgotPasswordMailForBookingClient,
   sendMailForUser,
+  getToken
 };

@@ -8,6 +8,7 @@ const calenderSettingService = require("../../services/schedule.service");
 const businessClassService = require("../../services/businessClass.service");
 const inventoryService = require("../../services/inventory.service");
 const productService = require("../../services/product.service");
+const userService = require("../../services/users.services");
 const serviceName = require("../../models/businessService");
 const serviceSetting = require("../../models/serviceSetting");
 const BookingLink = require("../../models/customizedLink");
@@ -18,6 +19,9 @@ const Mongoose = require("mongoose");
 const { pick } = require("lodash");
 const businessService = require("../../services/business.service");
 const emailSettingService = require("../../models/emailSetting");
+const jwt = require("jsonwebtoken");
+const {getToken} = require("../../helpers/helper");
+const mongoose = require("mongoose");
 // const createBooking = async (req, res) => {
 //   try {
 //     let {
@@ -2061,6 +2065,66 @@ const customizeBookingLink = async (req, res) => {
   }
 };
 
+const getUpcomingAppointments = async (req, res) => {
+
+  try {
+    let token = getToken(req);
+    const decodedUser = jwt.verify(token, process.env.FRONTEND_JWT_SECRET);
+
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(decodedUser.userData._id)})
+    if(!user){
+      return res.status(500).json({
+        code: 500,
+        message: "user not found",
+      });
+    }
+    const userEmail = user.email;
+
+    const appointments = await bookingService.getUpcomingAppointmentsByEmail(userEmail);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Data fetched",
+      data: appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      code: 500,
+      message: error.message,
+    });
+  }
+};
+
+const getRecentProviders = async (req, res) => {
+
+  try {
+    let token = getToken(req);
+    const decodedUser = jwt.verify(token, process.env.FRONTEND_JWT_SECRET);
+
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(decodedUser.userData._id)})
+    if(!user){
+      return res.status(500).json({
+        code: 500,
+        message: "user not found",
+      });
+    }
+    const userEmail = user.email;
+
+    const appointments = await bookingService.getRecentProvidersByBookingEmail(userEmail);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Data fetched",
+      data: appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      code: 500,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   bookingFilter,
@@ -2084,4 +2148,6 @@ module.exports = {
   searchinvoiceStatusandName,
   bookingFilterConfirmed,
   customizeBookingLink,
+  getUpcomingAppointments,
+  getRecentProviders
 };
