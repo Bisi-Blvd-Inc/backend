@@ -77,6 +77,11 @@ const getEnterpriseByUserId = async (userId) => {
         },
         {
           path: "goalsCompanyBudget",
+          select: "companyBudget accurateGoals",
+        },
+        {
+          path: "bookings",
+          select: "bookingStatus startDateTime servicePrice",
         },
       ],
     });

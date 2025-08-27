@@ -73,6 +73,12 @@ userSchema.virtual("goalsCompanyBudget", {
   foreignField: "addedBy",
 });
 
+userSchema.virtual("bookings", {
+  ref: "Booking",
+  localField: "_id",
+  foreignField: "userId",
+});
+
 userSchema.set("toObject", { virtuals: true });
 userSchema.set("toJSON", { virtuals: true });
 
