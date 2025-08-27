@@ -26,18 +26,18 @@ var userSchema = new Schema(
       report: { type: Boolean, default: false },
     },
     addedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    selectedCountry:{type:String},
-    selectedBusinessCountry:{type:String},
+    selectedCountry: { type: String },
+    selectedBusinessCountry: { type: String },
     state: { type: String },
     businessType: [{ type: Schema.Types.ObjectId, ref: "Business" }],
     reffered: { type: String },
     role: { type: Number, enum: [1, 2, 3], default: 2 },
     status: { type: Number, default: 0 },
     token: { type: String },
-    secretKey: { type: String},
-    publicKey: { type: String},
+    secretKey: { type: String },
+    publicKey: { type: String },
     isDeleted: { type: Boolean, default: false },
-    addedBy: { type: Schema.Types.ObjectId},
+    addedBy: { type: Schema.Types.ObjectId },
     loginStatus: { type: Number, enum: [0, 1], default: 0 },
     cardDetails: { type: Object },
     planDeatils: { type: Object },
@@ -53,19 +53,28 @@ var userSchema = new Schema(
       type: String,
     },
     fcmToken: { type: Array },
-    type:{type: String, default: "user" },
+    type: { type: String, default: "user" },
     subscription: { type: Object },
     paymentMethod: { type: Object },
-    paymentStatus: { type: Number , default: 0 },
+    paymentStatus: { type: Number, default: 0 },
     isActivateAccount: { type: Boolean, default: false },
-    HistoryActivateStatus : { type: Boolean, default: true },
-    DeactivateAccountDate : { type: String},
+    HistoryActivateStatus: { type: Boolean, default: true },
+    DeactivateAccountDate: { type: String },
     withEnterprise: { type: Boolean, default: false },
     isEnterpriseAdmin: { type: Boolean, default: false },
   },
 
   { collection: "users", timestamps: { createdAt: true, updatedAt: true } }
 );
+
+userSchema.virtual("goalsCompanyBudget", {
+  ref: "goalsCompanyBudget",
+  localField: "_id",
+  foreignField: "addedBy",
+});
+
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
 
 var User = mongoose.model("User", userSchema);
 
