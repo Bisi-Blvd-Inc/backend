@@ -70,10 +70,15 @@ const getEnterpriseByUserId = async (userId) => {
     .populate({
       path: "userKeys.user",
       model: "User",
-      populate: {
-        path: "businessType",
-        model: "Business",
-      },
+      populate: [
+        {
+          path: "businessType",
+          model: "Business",
+        },
+        {
+          path: "goalsCompanyBudget",
+        },
+      ],
     });
 };
 
