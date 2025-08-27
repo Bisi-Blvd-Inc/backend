@@ -1,15 +1,15 @@
 const authService = require("../../services/auth.services");
 const businessService = require("../../services/business.service");
 const bookingService = require("../../services/booking.service")
-const emailSettingService=require('../../models/emailSetting')
+const emailSettingService = require('../../models/emailSetting')
 const _ = require("lodash");
 const { pick } = require("lodash");
 const { createAdminNotification } = require("./notification.controller");
-const { generateToken, comparePassword, verifyJWT } = require("../../helpers/helper");
+const { generateToken, comparePassword, verifyJWT, sendForgotPasswordMailForBookingClient} = require("../../helpers/helper");
 const bcrypt = require("bcrypt");
 const { sendForgotPasswordMailForFrontend } = require("../../helpers/helper");
 const { sendActivationMail, returnAccountActivationMail, sendReturnuser, activateAccount, sendWrongPasswordMail, accountactivationMailToOwner, accountDeactivationMailToOwner, sendNewuserCreated, accountDeactivationMail, accountactivationMail } = require("../../helpers/users");
-const {sendLeadConnectorWebhook} = require("../../helpers/marketingConnector");
+const { sendLeadConnectorWebhook } = require("../../helpers/marketingConnector");
 
 const signin = async (req, res) => {
   try {
@@ -62,7 +62,7 @@ const signin = async (req, res) => {
         fcmToken: array,
       };
 
-      let updatedUser = await authService.update(userId, { fcmToken: array, isActivateAccount : false});
+      let updatedUser = await authService.update(userId, { fcmToken: array, isActivateAccount: false });
       if (user?.status == 0 && user?.HistoryActivateStatus == false) {
         returnAccountActivationMail(user?.email);
         sendReturnuser(user?.firstName, resultsArray)
@@ -150,7 +150,7 @@ const signup = async (req, res) => {
           };
 
           await createAdminNotification(notification);
-          await emailSettingService.create({description1:"",description2:"",endsWith:"",addedBy:createdUser._id})
+          await emailSettingService.create({ description1: "", description2: "", endsWith: "", addedBy: createdUser._id })
           return res.status(201).json({
             success: true,
             message: "Registered successfully, Please verify email!",
@@ -176,7 +176,7 @@ const signup = async (req, res) => {
         firstName,
         createdUser._id
       );
-      await emailSettingService.create({description1:"",description2:"",endsWith:"",addedBy:createdUser._id})
+      await emailSettingService.create({ description1: "", description2: "", endsWith: "", addedBy: createdUser._id })
       return res.status(201).json({
         success: true,
         message: "Staff add successfully.. ",
@@ -532,6 +532,79 @@ const accountActivateByClient = async (req, res) => {
   }
 }
 
+const bookingClientSignUp = async (req, res) => {
+  const { email, password } = req.body
+  console.log(req.body)
+  const user = await authService.findOne({ email, isDeleted: false });
+
+  if (user) {
+    return res.status(400).json({
+      message: "Email Already Exists",
+    });
+  }
+
+  bcrypt.hash(password?.toString(), 10, async (err, hash) => {
+    try {
+      if (err) {
+        return res.status(400).json({
+          error: "Something went wrong",
+        });
+      }
+      const newUser = {
+        ...req.body,
+        password: hash,
+      };
+
+
+      const createdUser = await authService.post(newUser);
+
+      return res.status(201).json({
+        success: true,
+        message: "Registered successfully",
+        data: createdUser,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: error.message,
+        data: {},
+        success: false,
+      });
+    }
+  });
+}
+
+const bookingClientForgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    let result1 = await authService.findOne({ email });
+    if (!result1) {
+      return res.status(200).send({
+        message: "Email is not valid, please enter correct Email",
+        code: 404,
+      });
+    } else if (result1.role !== 2) {
+      return res.status(200).json({
+        message: "Please enter the registered email adddress",
+      });
+    } else {
+      const token = await generateToken(result1, Math.floor(Date.now() / 1000) + (60 * 60 * 48));
+      await sendForgotPasswordMailForBookingClient({
+        token: token,
+        email: email,
+      });
+
+      return res.status(200).json({
+        message: "Email sent successfully",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error,
+    });
+  }
+};
+
 module.exports = {
   signin,
   signup,
@@ -544,5 +617,8 @@ module.exports = {
   onActivateAccount,
   autoSignIn,
   accountDeactivation,
-  accountActivateByClient
+  accountActivateByClient,
+  bookingClientSignUp,
+  bookingClientForgotPassword
+
 };

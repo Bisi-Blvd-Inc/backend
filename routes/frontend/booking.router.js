@@ -43,6 +43,8 @@ router.post(
   ]),
   bookingController.customizeBookingLink
 );
+router.get("/upcoming-appointments", bookingController.getUpcomingAppointments);
+router.get("/recent-providers", bookingController.getRecentProviders);
 
 
 module.exports = router;

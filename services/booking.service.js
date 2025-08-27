@@ -228,9 +228,59 @@ const findBycutomerID = (condition) => {
   return bookingCollection.find(condition).populate("service").populate("classes").populate("products");
 };
 
+const getUpcomingAppointmentsByEmail = (userEmail) => {
+  return bookingCollection.find({email: userEmail, startDate: { $gte: new Date() }}).sort({ startDate: 1 }).populate("service").populate("classes").populate("products");
+};
 
 const findinvoicecutomerID = (condition) => {
   return bookingCollection.find(condition).populate("bookingFor");
+};
+
+// Add this function to your booking.service.js file
+
+/**
+ * Finds all users who have created bookings for a specific customer email.
+ * @param {string} email - The customer's email to search for in the bookings.
+ * @returns {Promise<Array>} A promise that resolves to an array of user objects who created the bookings.
+ */
+const getRecentProvidersByBookingEmail = (email) => {
+  return bookingCollection.aggregate([
+    {
+      $match: {
+        email: email,
+      },
+    },
+    {
+      $group: {
+        _id: "$userId",
+        lastAppointmentDate: { $max: "$startDate" }
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $unwind: "$user",
+    },
+    {
+      $project: {
+        _id: "$user._id",
+        businessName: "$user.businessName",
+        email: "$user.email",
+        lastAppointmentDate: "$lastAppointmentDate",
+      },
+    },
+    {
+      $sort: {
+        lastAppointmentDate: -1,
+      },
+    },
+  ]);
 };
 
 module.exports = {
@@ -248,5 +298,7 @@ module.exports = {
   findWithEmail,
   findCustomerWithName,
   findBycutomerID,
-  findinvoicecutomerID
+  findinvoicecutomerID,
+  getUpcomingAppointmentsByEmail,
+  getRecentProvidersByBookingEmail
 };
