@@ -204,7 +204,7 @@ const deleteEnterpriseKey = async (req, res) => {
     if (updatedEnterprise) {
       return res.status(200).json({
         message: `License key deleted successfully${
-          userDeleted ? " and user removed" : ""
+          userDeleted ? " and user removed from enterprise" : ""
         }`,
         success: true,
         data: updatedEnterprise,

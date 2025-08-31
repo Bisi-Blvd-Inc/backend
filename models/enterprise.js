@@ -16,6 +16,7 @@ const enterpriseSchema = new Schema(
       {
         key: { type: String, required: true },
         user: { type: Schema.Types.ObjectId, ref: "User", default: null },
+        email: { type: String, default: null },
       },
     ],
   },
