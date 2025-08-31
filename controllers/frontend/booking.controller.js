@@ -2068,10 +2068,8 @@ const customizeBookingLink = async (req, res) => {
 const getUpcomingAppointments = async (req, res) => {
 
   try {
-    let token = getToken(req);
-    const decodedUser = jwt.verify(token, process.env.FRONTEND_JWT_SECRET);
-
-    const user = await userService.findOne({_id: mongoose.Types.ObjectId(decodedUser.userData._id)})
+   const userId = req._user
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(userId)})
     if(!user){
       return res.status(500).json({
         code: 500,
@@ -2098,10 +2096,8 @@ const getUpcomingAppointments = async (req, res) => {
 const getRecentProviders = async (req, res) => {
 
   try {
-    let token = getToken(req);
-    const decodedUser = jwt.verify(token, process.env.FRONTEND_JWT_SECRET);
-
-    const user = await userService.findOne({_id: mongoose.Types.ObjectId(decodedUser.userData._id)})
+    const userId = req._user
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(userId)})
     if(!user){
       return res.status(500).json({
         code: 500,
@@ -2111,6 +2107,37 @@ const getRecentProviders = async (req, res) => {
     const userEmail = user.email;
 
     const appointments = await bookingService.getRecentProvidersByBookingEmail(userEmail);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Data fetched",
+      data: appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      code: 500,
+      message: error.message,
+    });
+  }
+};
+
+const getAppointmentHistory = async (req, res) => {
+
+  try {
+
+    const userId = req._user
+    const numLimit = req.query.limit;
+    const numOffset = req.query.offset;
+
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(userId)})
+    if(!user){
+      return res.status(500).json({
+        code: 500,
+        message: "user not found",
+      });
+    }
+    const userEmail = user.email;
+    const appointments = await bookingService.fetchBookingHistoryByEmail(userEmail, numLimit, numOffset);
 
     return res.status(200).json({
       code: 200,
@@ -2149,5 +2176,6 @@ module.exports = {
   bookingFilterConfirmed,
   customizeBookingLink,
   getUpcomingAppointments,
-  getRecentProviders
+  getRecentProviders,
+  getAppointmentHistory
 };

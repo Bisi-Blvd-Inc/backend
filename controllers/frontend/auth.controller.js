@@ -553,6 +553,7 @@ const bookingClientSignUp = async (req, res) => {
       const newUser = {
         ...req.body,
         password: hash,
+        role: 3
       };
 
 
