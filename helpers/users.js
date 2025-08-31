@@ -76,6 +76,24 @@ const sendActivationMail = async (email) => {
   }
 };
 
+const sendEnterpriseActivationCode = async (email, code) => {
+  try {
+    const emailData = {
+      email,
+      subject: `Your Enterprise Activation Key`,
+      body: `<h1>Welcome! Use the following activation key to join the enterprise and <a href="${process.env.FRONT_lOGIN}/" target = "_blank"> create your account.</a></h1>
+      <p>Activation Code: ${code}</p>
+          <br />
+          <p>This email may contain sensetive information</p>
+          <p></p>
+      `,
+    };
+    return mail.sendUserMailerHtml(emailData);
+  } catch (error) {
+    throw error;
+  }
+};
+
 const returnAccountActivationMail = async (email) => {
   try {
     const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
@@ -920,6 +938,7 @@ module.exports = {
   sendBookingMail,
   sendNewuserCreated,
   sendPaymentMail,
+  sendEnterpriseActivationCode,
   cancelBookingMail,
   changeScheduleMail,
   sendBookingMailExternal,

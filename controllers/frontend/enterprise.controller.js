@@ -1,6 +1,7 @@
 const enterpriseService = require("../../services/enterprise.service");
 const Enterprise = require("../../models/enterprise");
 const { v4: uuidv4 } = require("uuid");
+const { sendEnterpriseActivationCode } = require("../../helpers/users");
 
 const joinEnterprise = async (req, res) => {
   try {
@@ -100,7 +101,7 @@ const generateAndSendActivationKey = async (req, res) => {
     );
 
     if (existingKey) {
-      await sendEmail(email, existingKey.key);
+      await sendEnterpriseActivationCode(email, existingKey.key);
       return res.status(200).json({
         success: true,
         message: "Activation code resent",
@@ -112,7 +113,7 @@ const generateAndSendActivationKey = async (req, res) => {
       if (unusedKey) {
         unusedKey.email = email;
         await enterprise.save();
-        await sendEmail(email, unusedKey.key);
+        await sendEnterpriseActivationCode(email, unusedKey.key);
         return res.status(200).json({
           success: true,
           message: "Activation code sent",
@@ -129,7 +130,7 @@ const generateAndSendActivationKey = async (req, res) => {
     enterprise.userKeys.push({ key: newKey, email });
     await enterprise.save();
 
-    await sendEmail(email, newKey);
+    await sendEnterpriseActivationCode(email, newKey);
 
     return res.status(200).json({
       success: true,
