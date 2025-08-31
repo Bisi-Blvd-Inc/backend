@@ -283,6 +283,97 @@ const getRecentProvidersByBookingEmail = (email) => {
   ]);
 };
 
+
+/**
+ * Fetches a paginated history of bookings for a specific email.
+ * @param {string} email - The customer's email.
+ * @param {number} limit - The number of bookings to return per page.
+ * @param {number} offset - The number of bookings to skip (for pagination).
+ * @returns {Promise<Object>} A promise that resolves to an object with booking data and page info.
+ */
+const fetchBookingHistoryByEmail = async (email, limit = 10, offset = 0) => {
+  const numLimit = parseInt(limit, 10) || 10;
+  const numOffset = parseInt(offset, 10) || 0;
+
+  const aggregationResult = await bookingCollection.aggregate([
+    // Stage 1: Find all bookings matching the email
+    {
+      $match: { email: email },
+    },
+    // Stage 2: Sort by start date to show the most recent bookings first
+    {
+      $sort: { startDate: -1 },
+    },
+    // Stage 3: Use $facet to create two parallel pipelines: one for data, one for metadata
+    {
+      $facet: {
+        // Pipeline for the paginated data
+        data: [
+          { $skip: numOffset },
+          { $limit: numLimit },
+          // Populate related fields for the paginated results
+          {
+            $lookup: {
+              from: "businessService",
+              localField: "service",
+              foreignField: "_id",
+              as: "service",
+            },
+          },
+          {
+            $lookup: {
+              from: "businessClass",
+              localField: "classes",
+              foreignField: "_id",
+              as: "classes",
+            },
+          },
+          {
+            $lookup: {
+              from: "Product",
+              localField: "products",
+              foreignField: "_id",
+              as: "products",
+            },
+          },
+        ],
+        // Pipeline for the pagination metadata
+        metadata: [{ $count: "total" }],
+      },
+    },
+    // Stage 4: Reshape the output for a cleaner response
+    {
+      $project: {
+        data: "$data",
+        pageInfo: {
+          // Use $ifNull to handle cases where there are no results
+          total: { $ifNull: [{ $arrayElemAt: ["$metadata.total", 0] }, 0] },
+          // Use $literal to treat the variables as values, not projection flags
+          limit: { $literal: numLimit },
+          offset: { $literal: numOffset },
+        },
+      },
+    },
+  ]);
+
+  // Aggregation returns an array, we need the first (and only) element
+  const result = aggregationResult[0];
+
+  // If there are no results, provide a default structure
+  if (!result.pageInfo.total) {
+    return {
+      data: [],
+      pageInfo: {
+        total: 0,
+        limit: numLimit,
+        offset: numOffset,
+      },
+    };
+  }
+
+  return result;
+};
+
 module.exports = {
   post,
   update,
@@ -300,5 +391,6 @@ module.exports = {
   findBycutomerID,
   findinvoicecutomerID,
   getUpcomingAppointmentsByEmail,
-  getRecentProvidersByBookingEmail
+  getRecentProvidersByBookingEmail,
+  fetchBookingHistoryByEmail
 };

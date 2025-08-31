@@ -120,6 +120,31 @@ const getScheduleList = async (req, res) => {
   }
 };
 
+
+const getProviderScheduleList = async (req, res) => {
+  try {
+    const response = await scheduleService.findSchedule({
+      isDeleted: false,
+      addedBy: req.params.id
+    });
+    if (!response) {
+      return res.status(200).json({
+        message: " No Schedule found",
+        status: 404,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Schedule get successfully",
+        data: response,
+        count: response.length,
+        status: 200,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const getBookingScheduleListthisweek = async (req, res) => {
   try {
     const now = new Date();
@@ -223,5 +248,6 @@ module.exports = {
   deleteSchedule,
   getBookingScheduleListthisweek,
   getBookingScheduleListthismonth,
-  resendmail
+  resendmail,
+  getProviderScheduleList
 };

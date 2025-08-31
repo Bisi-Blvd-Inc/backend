@@ -5,6 +5,7 @@ const { authMiddleware } = require("../../middlewares/frontend/authMiddleware");
 
 router.post("/create", calenderSettingController.createSchedule);
 router.get("/get", authMiddleware, calenderSettingController.getScheduleList);
+router.get("/fetchScheduleByProvider/:id", authMiddleware, calenderSettingController.getProviderScheduleList);
 // router.get("/getSchedule", authMiddleware, calenderSettingController.getBookingScheduleList);
 router.get("/getSchedulethisweek", authMiddleware, calenderSettingController.getBookingScheduleListthisweek);
 router.get("/getSchedulethismonth", authMiddleware, calenderSettingController.getBookingScheduleListthismonth);

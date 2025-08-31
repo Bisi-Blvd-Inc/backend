@@ -45,6 +45,7 @@ router.post(
 );
 router.get("/upcoming-appointments", bookingController.getUpcomingAppointments);
 router.get("/recent-providers", bookingController.getRecentProviders);
+router.get("/appointment-history", bookingController.getAppointmentHistory);
 
 
 module.exports = router;

@@ -85,6 +85,26 @@ const getClassById = async (req, res) => {
   }
 };
 
+const getClassByProviderId = async (req, res) => {
+  try {
+    const result = await businessClassService.getClassById(req.params.id);
+    if (result) {
+      return res.status(200).json({
+        message: "Classes get successfully",
+        success: true,
+        data: result,
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: "No Data Found",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message, success: false });
+  }
+};
+
 const updateClass = async (req, res) => {
   try {
     const payload = req.body;
@@ -150,4 +170,5 @@ module.exports = {
   updateClass,
   searchClass,
   deleteClass,
+  getClassByProviderId
 };
