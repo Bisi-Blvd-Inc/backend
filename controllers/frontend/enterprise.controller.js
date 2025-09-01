@@ -1,5 +1,7 @@
 const enterpriseService = require("../../services/enterprise.service");
 const Enterprise = require("../../models/enterprise");
+const { v4: uuidv4 } = require("uuid");
+const { sendEnterpriseActivationCode } = require("../../helpers/users");
 
 const joinEnterprise = async (req, res) => {
   try {
@@ -83,8 +85,69 @@ const getEnterpriseByKey = async (req, res) => {
   }
 };
 
+const generateAndSendActivationKey = async (req, res) => {
+  try {
+    const { enterpriseId, email } = req.body;
+
+    const enterprise = await Enterprise.findById(enterpriseId);
+    if (!enterprise) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Enterprise not found" });
+    }
+
+    let existingKey = enterprise.userKeys.find(
+      (k) => k.email === email && !k.user
+    );
+
+    if (existingKey) {
+      await sendEnterpriseActivationCode(email, existingKey.key);
+      return res.status(200).json({
+        success: true,
+        message: "Activation code resent",
+      });
+    }
+
+    if (enterprise.userKeys?.length >= enterprise.licenses) {
+      const unusedKey = enterprise.userKeys.find((k) => !k.user);
+      if (unusedKey) {
+        unusedKey.email = email;
+        await enterprise.save();
+        await sendEnterpriseActivationCode(email, unusedKey.key);
+        return res.status(200).json({
+          success: true,
+          message: "Activation code sent",
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "No licenses available",
+        });
+      }
+    }
+
+    const newKey = uuidv4();
+    enterprise.userKeys.push({ key: newKey, email });
+    await enterprise.save();
+
+    await sendEnterpriseActivationCode(email, newKey);
+
+    return res.status(200).json({
+      success: true,
+      message: "Activation code sent",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: err.message,
+    });
+  }
+};
+
 module.exports = {
   joinEnterprise,
   getEnterpriseByUserId,
   getEnterpriseByKey,
+  generateAndSendActivationKey,
 };

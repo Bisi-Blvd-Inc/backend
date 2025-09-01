@@ -127,6 +127,72 @@ const getBusinessByUser = async (req, res) => {
   }
 };
 
+const getProviderBusiness = async (req, res) => {
+  try {
+    const user = await userCollection.findOne({
+      _id: req.params.id,
+      isDeleted: false,
+    });
+    const btype =
+        user &&
+        user.businessType &&
+        user.businessType.map((val) => {
+          return mongoose.Types.ObjectId(val);
+        });
+    if (user && user.businessType) {
+      let arr = [];
+
+      const result = await businessSchema.aggregate([
+        {
+          $match: {
+            businessTypeId: { $in: btype },
+          },
+        },
+      ]);
+
+      const service = result?.filter((val) => {
+        if (val.role == 1) {
+          return arr.push(val);
+        }
+      });
+
+      let result1 = result?.filter((item) => {
+        if (item.addedBy == req._user) {
+          return arr.push(item);
+        }
+      });
+
+      const serviceData = {
+        businessType: result.businessType,
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt,
+        isDeleted: result.isDeleted,
+        id: result.id,
+        service: arr,
+      };
+
+      if (!result) {
+        return res.status(400).json({
+          message: "Data not found",
+          status: 404,
+          data: [],
+        });
+      } else {
+        return res.status(200).json({
+          message: "Data get successfully",
+          data: serviceData,
+        });
+      }
+    }
+
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
 const editCompanyBudget = async (req, res) => {
   try {
     let goalsId = req.params.id;
@@ -212,4 +278,5 @@ module.exports = {
   getGoalBudget,
   saveGoalsBudget,
   getGoalById,
+  getProviderBusiness
 };

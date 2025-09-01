@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bookingController = require("../../controllers/frontend/booking.controller");
 const upload = require("../../middlewares/multer");
+const {authMiddleware} = require("../../middlewares/frontend/authMiddleware");
 
 router.post("/create", bookingController.createBooking);
 router.post("/filter", bookingController.bookingFilter);
@@ -43,6 +44,10 @@ router.post(
   ]),
   bookingController.customizeBookingLink
 );
+router.get("/upcoming-appointments",authMiddleware, bookingController.getUpcomingAppointments);
+router.get("/recent-providers", authMiddleware, bookingController.getRecentProviders);
+router.get("/appointment-history", authMiddleware, bookingController.getAppointmentHistory);
+router.get("/provider-search", authMiddleware, bookingController.getProviderBySearch);
 
 
 module.exports = router;

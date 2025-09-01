@@ -11,6 +11,7 @@ const updateById = async (id, obj) => {
   return await EnterpriseCollection.findByIdAndUpdate(id, obj);
 };
 
+// This needs to be modified, as we're not sure what deleting an enterprise would mean
 const deleteById = async (id) => {
   return await EnterpriseCollection.findByIdAndDelete(id);
 };
@@ -46,8 +47,8 @@ const deleteEnterpriseKey = async (key) => {
   let userDeleted = false;
   if (userId) {
     const response = await UserCollection.updateOne(
-      { _id: userId, role: 2 },
-      { $set: { isDeleted: true } }
+      { _id: userId },
+      { $set: { withEnterprise: false, isEnterpriseAdmin: false } }
     );
     userDeleted = response.modifiedCount > 0;
   }
@@ -77,6 +78,15 @@ const getEnterpriseByUserId = async (userId) => {
         },
         {
           path: "goalsCompanyBudget",
+          select: "companyBudget accurateGoals",
+        },
+        {
+          path: "bookings",
+          select: "bookingStatus startDateTime servicePrice",
+        },
+        {
+          path: "expenses",
+          select: "summaryObject",
         },
       ],
     });

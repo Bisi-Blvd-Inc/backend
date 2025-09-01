@@ -20,8 +20,8 @@ const checkAllUsersWithDeactivate = async () => {
     const allDeactivateAccounts = await users.find({ isActivateAccount: true });
 
     // Loop through all deactivate accounts
-         await Promise.all(
-         allDeactivateAccounts.map(async (user) => {
+    await Promise.all(
+      allDeactivateAccounts.map(async (user) => {
 
         let deactivateDate30days = new Date(user.DeactivateAccountDate);
         deactivateDate30days.setDate(deactivateDate30days.getDate() + 30);
@@ -32,17 +32,17 @@ const checkAllUsersWithDeactivate = async () => {
 
           if (currentTime >= newSubscriptionEndDate) {
             // Cancel subscription if current time is past the new subscription end date
-            if(user.paymentStatus == 1){
+            if (user.paymentStatus == 1) {
 
-            
-        const subscription =    await stripe.subscriptions.cancel(user.subscription.id);
-        
-            const deletedSubscription = await users.findByIdAndUpdate(
-              user._id,
-              { paymentStatus: 0 , subscriptionStatus : false , upgradeStatus : false , subscriptionStatus: false}
-            );
+
+              const subscription = await stripe.subscriptions.cancel(user.subscription.id);
+
+              const deletedSubscription = await users.findByIdAndUpdate(
+                user._id,
+                { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
+              );
+            }
           }
-        }
         } else {
           const after30DaysTime =
             currentTime.getTime() + 30 * 24 * 60 * 60 * 1000;
@@ -54,15 +54,15 @@ const checkAllUsersWithDeactivate = async () => {
             );
 
             if (currentTime >= newSubscriptionEndDate) {
-              if(user.paymentStatus == 1){
-              // Cancel subscription if current time is past the new subscription end date
-              await stripe.subscriptions.cancel(user.subscription.id);
-              const deletedSubscription = await users.findByIdAndUpdate(
-                user._id,
-                { paymentStatus: 0 , subscriptionStatus : false , upgradeStatus : false ,subscriptionStatus: false}
-              );
+              if (user.paymentStatus == 1) {
+                // Cancel subscription if current time is past the new subscription end date
+                await stripe.subscriptions.cancel(user.subscription.id);
+                const deletedSubscription = await users.findByIdAndUpdate(
+                  user._id,
+                  { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
+                );
+              }
             }
-          }
           } else {
             const deactivateDate = new Date(user.DeactivateAccountDate);
             deactivateDate.setDate(deactivateDate.getDate() + 30); // Add 30 days
@@ -70,26 +70,26 @@ const checkAllUsersWithDeactivate = async () => {
 
             if (currentTime >= deactivateDate) {
               // Cancel subscription if current time is past the deactivate date
-              if(user.paymentStatus == 1){
-              await stripe.subscriptions.cancel(user.subscription.id);
-              const deletedSubscription = await users.findByIdAndUpdate(
-                user._id,
-                { paymentStatus: 0 , subscriptionStatus : false , upgradeStatus : false , subscriptionStatus: false}
-              );
+              if (user.paymentStatus == 1) {
+                await stripe.subscriptions.cancel(user.subscription.id);
+                const deletedSubscription = await users.findByIdAndUpdate(
+                  user._id,
+                  { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
+                );
+              }
             }
-          }
           }
         }
 
         if (
           deactivateDate30days.getFullYear() === currentTime.getFullYear() &&
           deactivateDate30days.getMonth() === currentTime.getMonth() &&
-          deactivateDate30days.getDate() === currentTime.getDate()  
+          deactivateDate30days.getDate() === currentTime.getDate()
         ) {
 
           await users.findByIdAndUpdate(
-                  user._id,{paymentStatus: 0 , status : 0, HistoryActivateStatus:false}
-                );
+            user._id, { paymentStatus: 0, status: 0, HistoryActivateStatus: false }
+          );
         }
       })
     );

@@ -8,6 +8,7 @@ const calenderSettingService = require("../../services/schedule.service");
 const businessClassService = require("../../services/businessClass.service");
 const inventoryService = require("../../services/inventory.service");
 const productService = require("../../services/product.service");
+const userService = require("../../services/users.services");
 const serviceName = require("../../models/businessService");
 const serviceSetting = require("../../models/serviceSetting");
 const BookingLink = require("../../models/customizedLink");
@@ -18,6 +19,10 @@ const Mongoose = require("mongoose");
 const { pick } = require("lodash");
 const businessService = require("../../services/business.service");
 const emailSettingService = require("../../models/emailSetting");
+const jwt = require("jsonwebtoken");
+const {getToken} = require("../../helpers/helper");
+const mongoose = require("mongoose");
+const userCollection = require("../../models/user");
 // const createBooking = async (req, res) => {
 //   try {
 //     let {
@@ -652,8 +657,14 @@ const createBooking = async (req, res) => {
       classes,
       products,
       classOccurenceId,
+      providerId,
     } = req.body;
-    const userId = req._user;
+    /**
+     * providerId will be provided if booking is been created from the booking app
+     * if providerId is null, the user making the request is the provider
+     * if providerId is not null, the user making the request is a customer
+     */
+    const userId = providerId ?? req._user;
 
     if (
       serviceType !== "Class" &&
@@ -2061,6 +2072,126 @@ const customizeBookingLink = async (req, res) => {
   }
 };
 
+const getUpcomingAppointments = async (req, res) => {
+
+  try {
+   const userId = req._user
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(userId)})
+    if(!user){
+      return res.status(500).json({
+        code: 500,
+        message: "user not found",
+      });
+    }
+    const userEmail = user.email;
+
+    const appointments = await bookingService.getUpcomingAppointmentsByEmail(userEmail);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Data fetched",
+      data: appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      code: 500,
+      message: error.message,
+    });
+  }
+};
+
+const getRecentProviders = async (req, res) => {
+
+  try {
+    const userId = req._user
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(userId)})
+    if(!user){
+      return res.status(500).json({
+        code: 500,
+        message: "user not found",
+      });
+    }
+    const userEmail = user.email;
+
+    const appointments = await bookingService.getRecentProvidersByBookingEmail(userEmail);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Data fetched",
+      data: appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      code: 500,
+      message: error.message,
+    });
+  }
+};
+
+const getAppointmentHistory = async (req, res) => {
+
+  try {
+
+    const userId = req._user
+    const numLimit = req.query.limit;
+    const numOffset = req.query.offset;
+
+    const user = await userService.findOne({_id: mongoose.Types.ObjectId(userId)})
+    if(!user){
+      return res.status(500).json({
+        code: 500,
+        message: "user not found",
+      });
+    }
+    const userEmail = user.email;
+    const appointments = await bookingService.fetchBookingHistoryByEmail(userEmail, numLimit, numOffset);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Data fetched",
+      data: appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      code: 500,
+      message: error.message,
+    });
+  }
+};
+
+const getProviderBySearch = async (req, res) => {
+  if(!req.query.text){
+    return res.status(403).json({
+      code: 403,
+      message: "text must be provided",
+    });
+  }
+  const text = req.query.text
+  const pageNo = req.query.pageNo ? parseInt(req.query.pageNo, 10) : 1
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20
+  const providers =  await userCollection
+      .find({
+        $or: [
+          { firstName: { $regex: String(text), $options: "i" } },
+          { businessName: { $regex: String(text), $options: "i" } },
+          { email: { $regex: String(text), $options: "i" } },
+        ],
+        businessType: { $ne: [] },
+        subscriptionStatus: true,
+        isDeleted: false,
+        role: 2,
+      })
+      .select('businessName _id')
+      .skip(parseInt(pageNo - 1) * limit)
+      .limit(limit)
+
+  return res.status(200).json({
+    code: 200,
+    message: "Data fetched",
+    data: providers,
+  });
+};
+
 module.exports = {
   createBooking,
   bookingFilter,
@@ -2084,4 +2215,8 @@ module.exports = {
   searchinvoiceStatusandName,
   bookingFilterConfirmed,
   customizeBookingLink,
+  getUpcomingAppointments,
+  getRecentProviders,
+  getAppointmentHistory,
+  getProviderBySearch
 };

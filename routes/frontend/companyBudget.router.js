@@ -1,11 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const companyController = require("../../controllers/frontend/companyBudget.controller");
+const {authMiddleware} = require("../../middlewares/frontend/authMiddleware");
 router.post(
   "/comapny_budget",
   companyController.comapny_budget
 );
 router.get("/getBussiness", companyController.getBusinessByUser);
+router.get("/getProviderBusiness/:id", authMiddleware, companyController.getProviderBusiness);
 router.post(
   "/saveBudget",
   companyController.saveGoalsBudget
