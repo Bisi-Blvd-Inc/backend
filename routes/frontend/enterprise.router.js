@@ -11,7 +11,11 @@ router.get(
   enterpriseController.getEnterpriseByUserId
 );
 router.get("/get/:key", enterpriseController.getEnterpriseByKey);
-router.post("/sendActivationKey", enterpriseController.generateAndSendActivationKey);
+router.post(
+  "/sendActivationKey",
+  authMiddleware,
+  enterpriseController.generateAndSendActivationKey
+);
 router.get(
   "/deleteKey/:key",
   authMiddleware,
