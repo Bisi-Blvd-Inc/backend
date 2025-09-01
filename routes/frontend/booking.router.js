@@ -47,6 +47,7 @@ router.post(
 router.get("/upcoming-appointments",authMiddleware, bookingController.getUpcomingAppointments);
 router.get("/recent-providers", authMiddleware, bookingController.getRecentProviders);
 router.get("/appointment-history", authMiddleware, bookingController.getAppointmentHistory);
+router.get("/provider-search", authMiddleware, bookingController.getProviderBySearch);
 
 
 module.exports = router;
