@@ -2149,7 +2149,7 @@ const getAppointmentHistory = async (req, res) => {
     return res.status(200).json({
       code: 200,
       message: "Data fetched",
-      data: appointments,
+      data: appointments.data,
     });
   } catch (error) {
     return res.status(500).json({
