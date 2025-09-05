@@ -1,0 +1,60 @@
+name: Deploy Backend to Production
+
+on:
+  push:
+    branches: [ main, master ]
+
+env:
+  PRODUCTION_BACKEND_HOST: ${{ vars.PRODUCTION_BACKEND_HOST }}
+  PRODUCTION_BACKEND_USERNAME: ${{ vars.PRODUCTION_BACKEND_USERNAME }}
+  PRODUCTION_BACKEND_PORT: ${{ vars.PRODUCTION_BACKEND_PORT }}
+  PRODUCTION_BACKEND_PATH: ${{ vars.PRODUCTION_BACKEND_PATH }}
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy Backend to Production Server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ env.PRODUCTION_BACKEND_HOST }}
+        username: ${{ env.PRODUCTION_BACKEND_USERNAME }}
+        key: ${{ secrets.PRODUCTION_BACKEND_SSH_KEY }}
+        port: ${{ env.PRODUCTION_BACKEND_PORT }}
+        script: |
+          echo "Starting backend deployment to production..."
+
+          # Navigate to backend directory
+          cd ${{ env.PRODUCTION_BACKEND_PATH }}
+
+          # Pull latest changes
+          echo "Pulling latest code..."
+          git pull
+
+          # Install dependencies
+          echo "Installing dependencies..."
+          sudo npm install --legacy-peer-deps
+
+          # Stop existing PM2 processes
+          echo "Stopping PM2 processes..."
+          pm2 delete all || echo "No PM2 processes to delete"
+
+          # Start the application
+          echo "Starting application with PM2..."
+          pm2 start app.js
+
+          # Restart web server
+          echo "Restarting web server..."
+          sudo systemctl restart httpd
+
+          echo "Backend production deployment completed successfully!"
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Backend production deployment completed successfully!"
+        else
+          echo "❌ Backend production deployment failed!"
+        fi
