@@ -51,6 +51,7 @@ router.get("/searchPayment",authMiddleware,userController.getSearchPaymentHistor
 router.post("/getAllInventory", userController.getAllInventory);
 router.get("/getInventory/:id", userController.getSingleInventory);
 router.post("/getBusinessClasses", userController.getBusinessClasses);
+router.post("/deleteUser", authMiddleware, userController.deleteUser);
 
 
 module.exports = router;
