@@ -336,6 +336,24 @@ const fetchBookingHistoryByEmail = async (email, limit = 10, offset = 0) => {
               as: "products",
             },
           },
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "business",
+            },
+          },
+          {
+            $addFields: {
+              businessName: { $arrayElemAt: ["$business.businessName", 0] }
+            }
+          },
+          {
+            $project: {
+              business: 0
+            }
+          },
         ],
         // Pipeline for the pagination metadata
         metadata: [{ $count: "total" }],

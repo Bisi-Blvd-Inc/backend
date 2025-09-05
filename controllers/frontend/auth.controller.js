@@ -30,7 +30,7 @@ const signin = async (req, res) => {
         });
       }
 
-      if (![2, 3].includes(user.role)) {
+      if (![2, 3].includes(user.role) || user.isDeleted === true) {
         return res.status(203).send({
           message: "Access denied!",
           status: 403,
@@ -444,7 +444,7 @@ const autoSignIn = async (req, res) => {
         });
       }
 
-      if (![2, 3].includes(user.role)) {
+      if (![2, 3].includes(user.role) || user.isDeleted === true) {
         return res.status(203).send({
           message: "Access denied!",
           status: 403,
