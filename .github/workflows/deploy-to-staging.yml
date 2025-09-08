@@ -26,9 +26,15 @@ jobs:
 
     - name: Install dependencies and build
       run: |
-        sudo npm i
+        npm i
         # Create deployment package with node_modules
-        tar -czf deployment.tar.gz --exclude='.git' --exclude='.github' --exclude='*.tar.gz' .
+        tar -czf deployment.tar.gz \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='*.tar.gz' \
+          --warning=no-file-changed \
+          .
+
 
     - name: Copy deployment to server
       uses: appleboy/scp-action@v0.1.4
