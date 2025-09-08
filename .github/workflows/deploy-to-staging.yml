@@ -26,14 +26,22 @@ jobs:
 
     - name: Install dependencies and build
       run: |
+        set -x
         npm i
-        # Create deployment package with node_modules
+        # Wait a moment for any file operations to complete
+        sleep 2
+        # Create deployment package with better exclusions
         tar -czf deployment.tar.gz \
           --exclude='.git' \
           --exclude='.github' \
           --exclude='*.tar.gz' \
+          --exclude='.npm' \
+          --exclude='.cache' \
+          --exclude='node_modules/.cache' \
           --warning=no-file-changed \
           .
+
+
 
 
     - name: Copy deployment to server
