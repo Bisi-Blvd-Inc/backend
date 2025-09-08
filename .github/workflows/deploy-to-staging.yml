@@ -9,6 +9,7 @@ env:
   STAGING_BACKEND_USERNAME: ${{ vars.STAGING_BACKEND_USERNAME }}
   STAGING_BACKEND_PORT: ${{ vars.STAGING_BACKEND_PORT }}
   STAGING_BACKEND_PATH: ${{ vars.STAGING_BACKEND_PATH }}
+  STAGING_ENV_FILE: ${{ vars.STAGING_ENV_FILE }}
 
 jobs:
   build-and-deploy:
@@ -27,6 +28,10 @@ jobs:
     - name: Install dependencies and build
       run: |
         set -x
+
+        # Create .env file from variable
+        echo "${{ env.STAGING_ENV_FILE }}" > .env
+
         npm ci
 
         # Create deployment directory
