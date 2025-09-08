@@ -9,7 +9,7 @@ on:
       node-version:
         required: false
         type: string
-        default: '14'
+        default: '18'
 
 jobs:
   build-and-deploy:
@@ -33,8 +33,7 @@ jobs:
         # Create .env file from variable
         echo "${{ vars.ENV_FILE }}" > .env
 
-        # Match Jenkins script approach to handle dependency conflicts
-        npm i --legacy-peer-deps
+        npm ci
 
         # Create deployment directory
         mkdir -p build
