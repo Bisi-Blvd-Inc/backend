@@ -8,6 +8,7 @@ const owner = require("../utilities/owner");
 const { find } = require("lodash");
 const { smtpSms } = require("../helpers/twilio");
 const htmlParser = require("node-html-parser");
+const UserPasswordModel = require("lodash");
 require("dotenv").config();
 
 const AdminUrl = process.env.ADMIN_BASE_URL;
@@ -716,12 +717,32 @@ const activateAccount = async (token) => {
         { email: decodedUser.email },
         { status: 1 }
       );
-      const countryCode = user.selectedCountry.split(" ")[1];
-      const smsData = {
-        to: `${countryCode}${user.mobile}`,
-        text: `Congratulations, your Bisi Blvd. Account has been activated.`,
-      };
-      await smtpSms(smsData);
+
+      // Guard: Check if selectedCountry exists and is a string before splitting
+      if (user.selectedCountry && typeof user.selectedCountry === 'string') {
+        const countryParts = user.selectedCountry.split(" ");
+
+        // Guard: Check if country code exists after split
+        if (countryParts.length > 1) {
+          const countryCode = countryParts[1];
+
+          // Guard: Check if user has mobile number
+          if (user.mobile) {
+            const smsData = {
+              to: `${countryCode}${user.mobile}`,
+              text: `Congratulations, your Bisi Blvd. Account has been activated.`,
+            };
+            await smtpSms(smsData);
+          } else {
+            console.error('User mobile number missing for SMS:', user.email);
+          }
+        } else {
+          console.error('Invalid selectedCountry format:', user.selectedCountry);
+        }
+      } else {
+        console.error('User selectedCountry missing or invalid:', user.email, user.selectedCountry);
+      }
+
       return user;
     }
   } catch (error) {
