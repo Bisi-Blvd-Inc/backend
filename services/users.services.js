@@ -40,6 +40,10 @@ const getAllUser = () => {
   .sort({ createdAt: -1 });
 };
 
+const deleteUser = (userId) => {
+  return userCollection.findByIdAndUpdate(userId, { isDeleted: true });
+};
+
 module.exports = {
   get,
   remove,
@@ -50,4 +54,5 @@ module.exports = {
   findEmail,
   post,
   getAllUser,
+  deleteUser,
 };

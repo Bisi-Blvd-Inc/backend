@@ -1,0 +1,107 @@
+name: _Reusable Backend Deploy Workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      node-version:
+        required: false
+        type: string
+        default: '18'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies and build
+      run: |
+        set -x
+
+        # Create .env file from variable
+        echo "${{ vars.ENV_FILE }}" > .env
+
+        npm ci
+
+        # Create deployment directory
+        mkdir -p build
+
+        # Copy everything except excluded items
+        rsync -av --exclude='.git' \
+                  --exclude='.github' \
+                  --exclude='node_modules/.cache' \
+                  --exclude='*.log' \
+                  --exclude='logs/' \
+                  --exclude='coverage/' \
+                  --exclude='test/' \
+                  --exclude='tests/' \
+                  --exclude='*.test.js' \
+                  --exclude='*.spec.js' \
+                  --exclude='.env.local' \
+                  --exclude='tmp/' \
+                  --exclude='temp/' \
+                  --exclude='*.tar.gz' \
+                  ./ build/
+
+        # Create archive from build directory
+        tar -czf deployment.tar.gz -C build .
+
+    - name: Copy deployment to server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ vars.HOST }}
+        username: ${{ vars.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ vars.PORT }}
+        source: "deployment.tar.gz"
+        target: "/tmp/"
+
+    - name: Deploy Backend to Server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ vars.HOST }}
+        username: ${{ vars.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ vars.PORT }}
+        script: |
+          echo "Starting backend deployment to ${{ inputs.environment }}..."
+
+          # Navigate to backend directory
+          cd ${{ vars.PATH }}
+
+          # Extract the pre-built deployment
+          echo "Extracting pre-built deployment..."
+          tar -xzf /tmp/deployment.tar.gz -C .
+          rm /tmp/deployment.tar.gz
+
+          # Stop existing PM2 processes
+          pm2 delete all
+
+          # Start the application
+          pm2 start app.js
+
+          # Restart web server (if httpd is used)
+          sudo systemctl restart httpd 2>/dev/null || echo "httpd not available or not needed"
+
+          echo "Backend ${{ inputs.environment }} deployment completed successfully!"
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Backend ${{ inputs.environment }} deployment completed successfully!"
+        else
+          echo "❌ Backend ${{ inputs.environment }} deployment failed!"
+        fi
