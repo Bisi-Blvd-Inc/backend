@@ -29,7 +29,7 @@ jobs:
         set -x
         npm i
         # Wait a moment for any file operations to complete
-        sleep 2
+        sleep 5
         # Create deployment package with better exclusions
         tar -czf deployment.tar.gz --exclude='.git' --exclude='.github' --exclude='*.tar.gz' .
 
