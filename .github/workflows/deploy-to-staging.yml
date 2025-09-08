@@ -27,9 +27,9 @@ jobs:
     - name: Install dependencies and build
       run: |
         set -x
-        npm i
+        npm ci
         # Wait a moment for any file operations to complete
-        sleep 5
+        sleep 2
         # Create deployment package with better exclusions
         tar -czf deployment.tar.gz --exclude='.git' --exclude='.github' --exclude='*.tar.gz' .
 
