@@ -6,7 +6,6 @@ const {
   sendLeadConnectorWebhook,
 } = require("../../helpers/marketingConnector");
 const { sendActivationMail } = require("../../helpers/users");
-const { v4: uuidv4 } = require("uuid");
 const authService = require("../../services/auth.services");
 
 const createEnterprise = async (req, res) => {
@@ -56,12 +55,7 @@ const createEnterprise = async (req, res) => {
           const enterprise = await enterpriseService.createEnterprise({
             ...req.body,
             password: hash,
-            userKeys: [
-              {
-                key: uuidv4(),
-                user: createdUser._id,
-              },
-            ],
+            userKeys: [],
           });
 
           return res.status(200).json({
