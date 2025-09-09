@@ -157,7 +157,7 @@ const getProviderBusiness = async (req, res) => {
       });
 
       let result1 = result?.filter((item) => {
-        if (item.addedBy == req._user) {
+        if (item.addedBy == req.params.id) {
           return arr.push(item);
         }
       });
