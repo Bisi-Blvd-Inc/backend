@@ -8,6 +8,7 @@ const enterpriseSchema = new Schema(
     phone: { type: String, required: true },
     email: { type: String, required: true },
     password: { type: String, required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User" },
     headquarters: { type: String },
     enterpriseSource: { type: String },
     businessType: [{ type: Schema.Types.ObjectId, ref: "Business" }],
