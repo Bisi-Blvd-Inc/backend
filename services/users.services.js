@@ -44,6 +44,19 @@ const deleteUser = (userId) => {
   return userCollection.findByIdAndUpdate(userId, { isDeleted: true });
 };
 
+const updateFcmToken = async (userId, fcmToken) => {
+  try {
+    const updatedUser = await userCollection.findByIdAndUpdate(
+        userId,
+        { $addToSet: { fcmToken: fcmToken } },
+        { new: true }
+    );
+    return updatedUser;
+  } catch (e) {
+    throw new ApiError(500, e.message);
+  }
+};
+
 module.exports = {
   get,
   remove,
@@ -55,4 +68,5 @@ module.exports = {
   post,
   getAllUser,
   deleteUser,
+  updateFcmToken,
 };

@@ -52,6 +52,7 @@ router.post("/getAllInventory", userController.getAllInventory);
 router.get("/getInventory/:id", userController.getSingleInventory);
 router.post("/getBusinessClasses", userController.getBusinessClasses);
 router.post("/deleteUser", authMiddleware, userController.deleteUser);
+router.post("/updateFcmToken", authMiddleware, userController.updateFcmToken);
 
 
 module.exports = router;

@@ -2628,6 +2628,42 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const updateFcmToken = async (req, res) => {
+  try {
+    const userId = req._user;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication required",
+      });
+    }
+
+    const fcmToken = req.body.fcmToken;
+    if (!fcmToken) {
+      return res.status(401).json({success: false,
+        message: "fcmToken is required",})
+    }
+    const response = await usersService.updateFcmToken(userId, fcmToken);
+    if (response) {
+      return res.status(200).json({
+        success: true,
+        message: "User fcm token updated successfully",
+        data: response,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "No User Found",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
 module.exports = {
   createUser,
   getUser,
@@ -2673,4 +2709,5 @@ module.exports = {
   createMultipleProducts,
   handleProductsPayment,
   deleteUser,
+  updateFcmToken
 };
