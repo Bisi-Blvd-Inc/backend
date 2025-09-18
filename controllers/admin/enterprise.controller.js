@@ -55,6 +55,7 @@ const createEnterprise = async (req, res) => {
           const enterprise = await enterpriseService.createEnterprise({
             ...req.body,
             password: hash,
+            userId: createdUser?._id,
             userKeys: [],
           });
 

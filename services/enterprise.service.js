@@ -63,7 +63,7 @@ const deleteEnterpriseKey = async (key) => {
 };
 
 const getEnterpriseByUserId = async (userId) => {
-  return await EnterpriseCollection.findOne({ "userKeys.user": userId })
+  return await EnterpriseCollection.findOne({ userId: userId })
     .populate({
       path: "businessType",
       model: "Business",
