@@ -13,7 +13,7 @@ const serviceName = require("../../models/businessService");
 const serviceSetting = require("../../models/serviceSetting");
 const BookingLink = require("../../models/customizedLink");
 const moment = require("moment");
-const { sendBookingMail, cancelBookingMail } = require("../../helpers/users");
+const { sendBookingMail, cancelBookingMail, sendPaymentMail} = require("../../helpers/users");
 const { smtpSms } = require("../../helpers/twilio");
 const Mongoose = require("mongoose");
 const { pick } = require("lodash");
@@ -23,6 +23,9 @@ const jwt = require("jsonwebtoken");
 const {getToken} = require("../../helpers/helper");
 const mongoose = require("mongoose");
 const userCollection = require("../../models/user");
+const stripe = require("stripe");
+const paymentCollection = require("../../models/paymentHistory");
+const serviceSettingCollection = require("../../models/serviceSetting");
 // const createBooking = async (req, res) => {
 //   try {
 //     let {
@@ -1479,7 +1482,7 @@ const bookingDelete = async (req, res) => {
     const response = await bookingCollection.deleteOne({ _id: id });
     if (exist) {
       const schedule = await calenderSettingService.find({
-        addedBy: req._user,
+        addedBy: exist.addedBy,
       });
       const deleteNotification = await notificationCollection.deleteOne({
         bookingId: id,
@@ -1739,18 +1742,18 @@ const bookingEdit = async (req, res, next) => {
             endTime,
           };
 
-          const index = schedule.scheduledData.findIndex(
+          const index = schedule?.scheduledData?.findIndex(
             (slot) => slot.startTime > newSlot.startTime
           );
 
           if (index === -1) {
-            schedule.scheduledData.push(newSlot);
+            schedule?.scheduledData.push(newSlot);
           } else {
-            schedule.scheduledData.splice(index, 0, newSlot);
+            schedule?.scheduledData.splice(index, 0, newSlot);
           }
 
           await calenderSettingService.update(scheduleId, {
-            scheduledData: schedule.scheduledData,
+            scheduledData: schedule?.scheduledData,
           });
         }
       }
@@ -2192,6 +2195,231 @@ const getProviderBySearch = async (req, res) => {
   });
 };
 
+const makeBookingPayment = async (req, res) => {
+  try{
+    let {providerId,
+      paymentType,
+      service,
+      paymentMethodId,
+      customerId,
+      totalPrice,
+      numberOfSeats,
+      classes} = req.body
+    const userId = req._user
+    const user = await userService.findOne({_id: Mongoose.Types.ObjectId(userId)})
+
+    if(!user){
+      return res.status(500).json({
+        code: 500,
+        message: "user not found",
+      });
+    }
+
+    let combinedDescription = "";
+    let durationDescription = "";
+
+    // Either booking a service or a class
+    if (service?.length > 0) {
+      let totalHours = 0;
+      let totalMinutes = 0;
+
+      const serviceIds = service.map(Mongoose.Types.ObjectId);
+      const serviceDurationData = await serviceSettingCollection.find({
+        addedBy: providerId,
+      });
+      const serviceValSet = new Set(serviceIds.map((val) => val.toString()));
+
+      const serviceTime = serviceDurationData[0]?.service || [];
+
+      serviceTime.forEach((svc) => {
+        if (serviceValSet.has(svc?.serviceId?.toString())) {
+          totalHours += svc?.serviceTime?.hours || 0;
+          totalMinutes += svc?.serviceTime?.minutes || 0;
+        }
+      });
+      const bookedService = await serviceName.find({
+        _id: { $in: serviceIds },
+      });
+      combinedDescription = bookedService
+          .map((item) => item.service)
+          .join(", ");
+      if (totalMinutes >= 60) {
+        const extraHours = Math.floor(totalMinutes / 60);
+        totalHours += extraHours;
+        totalMinutes -= extraHours * 60;
+      }
+      durationDescription = `${totalHours} hours ${totalMinutes} minutes`;
+    } else if (classes?.length > 0) {
+      const businessClassData = await businessClassCollection.find({
+        _id: { $in: classes },
+      });
+      const classData = businessClassData?.[0];
+      if (!classData) {
+        return res
+            .status(404)
+            .json({ success: false, message: "Class not found" });
+      }
+
+      const start = moment(classData?.startTime, "hh:mm A");
+      const end = moment(classData?.endTime, "hh:mm A");
+      const duration = moment.duration(end.diff(start));
+      const hours = Math.floor(duration.asHours());
+      const minutes = duration.minutes();
+
+      durationDescription = `${hours} hours ${minutes} minutes`;
+      combinedDescription = `${classData.name} class (${numberOfSeats} ${
+          numberOfSeats > 1 ? "seats" : "seat"
+      })`;
+    } else {
+      return res
+          .status(400)
+          .json({ success: false, message: "No bookings found" });
+    }
+  const provider = await userCollection.findById(providerId);
+  if (!provider?.secretKey) {
+    return res
+        .status(400)
+        .json({ success: false, message: "Salon owner or secret key missing" });
+  }
+
+  let stripeInstance;
+  try {
+    stripeInstance = stripe(provider.secretKey);
+  } catch (err) {
+    return res
+        .status(500)
+        .json({ success: false, message: "Stripe initialization failed" });
+  }
+
+  let Product;
+  try {
+    const products = await stripeInstance.products.list();
+    Product = products.data.find((p) => p.name === "Bisi");
+
+    if (!Product) {
+      Product = await stripeInstance.products.create({ name: "Bisi" });
+    }
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Stripe product error: " + err.message,
+    });
+  }
+
+  let stripePrice;
+  try {
+    stripePrice = await stripeInstance.prices.create({
+      product: Product.id,
+      unit_amount: Math.round(Number(totalPrice) * 100),
+      currency: "usd",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Stripe price creation error: " + err.message,
+    });
+  }
+
+  if (paymentType === "Paid" || paymentType === "CreditCard") {
+    let paymentIntent;
+    try {
+      paymentIntent = await stripeInstance.paymentIntents.create({
+        amount: Math.round(Number(totalPrice) * 100),
+        customer: customerId,
+        payment_method: paymentMethodId,
+        metadata: { product_id: Product.id },
+        currency: "usd",
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: "never",
+        },
+      });
+      await stripeInstance.paymentIntents.confirm(paymentIntent.id);
+    } catch (err) {
+      return res
+          .status(500)
+          .json({ success: false, message: "Payment failed: " + err.message });
+    }
+
+    let invoice;
+    try {
+      invoice = await stripeInstance.invoices.create({
+        customer: customerId,
+        currency: "usd",
+      });
+      await stripeInstance.invoiceItems.create({
+        customer: customerId,
+        amount: Math.round(Number(totalPrice) * 100),
+        currency: "usd",
+        description: combinedDescription,
+        invoice: invoice.id,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Invoice creation error: " + err.message,
+      });
+    }
+
+    const paymentTime = new Date().toISOString().slice(11, 16);
+    const date = new Date().toISOString().slice(0, 10);
+
+    sendPaymentMail(
+        user?.name,
+        user?.email,
+        combinedDescription,-
+        date,
+        durationDescription,
+        paymentTime,
+        invoice.id,
+        totalPrice
+    );
+
+    const countryCode = user.selectedCountry?.split(" ")[1] || "";
+
+    try {
+     if (phone) {
+        await smtpSms({
+          to: `${countryCode}${user.phone.replace(" ", "")}`,
+          text: "Your Booked Service Appointment is confirmed.",
+        });
+      }
+
+    } catch (err) {
+      console.error("SMS sending error:", err.message);
+    }
+
+    const paymentDetails = {
+      name: user.name,
+      email: user.email,
+      paymentIntent: paymentIntent.id,
+      invoiceNumber: invoice.id,
+      paymentStatus: paymentIntent.status,
+      amount: Number(paymentIntent.amount) / 100,
+      providerId,
+    };
+
+    await paymentCollection.create(paymentDetails);
+
+    return res.status(200).json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+      price: paymentDetails.amount,
+      status: 200,
+    });
+  }
+
+  return res
+      .status(400)
+      .json({ success: false, message: "Unsupported payment type" });
+} catch (error) {
+  console.error("Unhandled error in booking payment:", error.message);
+  return res
+      .status(500)
+      .json({ code: 500, message: "Server error: " + error.message });
+}
+}
+
 module.exports = {
   createBooking,
   bookingFilter,
@@ -2218,5 +2446,6 @@ module.exports = {
   getUpcomingAppointments,
   getRecentProviders,
   getAppointmentHistory,
-  getProviderBySearch
+  getProviderBySearch,
+  makeBookingPayment
 };
