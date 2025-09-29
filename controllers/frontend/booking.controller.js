@@ -1482,7 +1482,7 @@ const bookingDelete = async (req, res) => {
     const response = await bookingCollection.deleteOne({ _id: id });
     if (exist) {
       const schedule = await calenderSettingService.find({
-        addedBy: req._user,
+        addedBy: exist.addedBy,
       });
       const deleteNotification = await notificationCollection.deleteOne({
         bookingId: id,
@@ -1742,18 +1742,18 @@ const bookingEdit = async (req, res, next) => {
             endTime,
           };
 
-          const index = schedule.scheduledData.findIndex(
+          const index = schedule?.scheduledData?.findIndex(
             (slot) => slot.startTime > newSlot.startTime
           );
 
           if (index === -1) {
-            schedule.scheduledData.push(newSlot);
+            schedule?.scheduledData.push(newSlot);
           } else {
-            schedule.scheduledData.splice(index, 0, newSlot);
+            schedule?.scheduledData.splice(index, 0, newSlot);
           }
 
           await calenderSettingService.update(scheduleId, {
-            scheduledData: schedule.scheduledData,
+            scheduledData: schedule?.scheduledData,
           });
         }
       }
