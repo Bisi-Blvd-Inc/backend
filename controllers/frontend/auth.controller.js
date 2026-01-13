@@ -15,12 +15,14 @@ const signin = async (req, res) => {
   try {
     const { email, password, fcmToken } = req.body;
     const user = await authService.findOne({ email });
-    const resultsArray = await Promise.all(
+    
+    if (user) {
+      const resultsArray = await Promise.all(
       user.businessType.map(async (businessTypeId) => {
         return await businessService.findOne({ _id: businessTypeId });
       })
     );
-    if (user) {
+      
       const validPassword = await comparePassword(password, user.password);
 
       if (!validPassword) {
