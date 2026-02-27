@@ -559,20 +559,21 @@ const userWebhook = async (req, res) => {
       };
       const update = await userCollection.findByIdAndUpdate(userId, obj);
       // BBCAN Enterprise Auto-Assignment
-    if (user?.planDeatils?.priceId === "price_1ShGxPJ1yWXXxAIet1miD2ZM") {
-      try {
-        const enterpriseCollection = require("../../models/enterprise");
-        const bbcanEnterprise = await enterpriseCollection.findOne({
-          enterpriseName: "BBCAN - Bisi Books Capital Access Network"
-        });
-        
-        if (bbcanEnterprise && !bbcanEnterprise.users.includes(userId)) {
-          bbcanEnterprise.users.push(userId);
-          await bbcanEnterprise.save();
-          console.log(`User ${userId} added to BBCAN enterprise`);
+      if (user?.planDeatils?.priceId === "price_1ShGxPJ1yWXXxAIet1miD2ZM") {
+        try {
+          const enterpriseCollection = require("../../models/enterprise");
+          const bbcanEnterprise = await enterpriseCollection.findOne({
+            enterpriseName: "BBCAN - Bisi Books Capital Access Network"
+          });
+          
+          if (bbcanEnterprise && !bbcanEnterprise.users.includes(userId)) {
+            bbcanEnterprise.users.push(userId);
+            await bbcanEnterprise.save();
+            console.log(`User ${userId} added to BBCAN enterprise`);
+          }
+        } catch (error) {
+          console.error("Error adding user to BBCAN enterprise:", error);
         }
-      } catch (error) {
-        console.error("Error adding user to BBCAN enterprise:", error);
       }
     }
   }
