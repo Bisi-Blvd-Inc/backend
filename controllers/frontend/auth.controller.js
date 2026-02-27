@@ -62,7 +62,7 @@ const signin = async (req, res) => {
         fcmToken: array,
       };
 
-      let updatedUser = await authService.update(userId, { fcmToken: array, isActivateAccount: false });
+      let updatedUser = await authService.update(userId, { fcmToken: array });
       if (user?.status == 0 && user?.HistoryActivateStatus == false) {
         returnAccountActivationMail(user?.email);
         sendReturnuser(user?.firstName, resultsArray)
@@ -149,7 +149,7 @@ const signup = async (req, res) => {
             fcmToken: fcmToken,
           };
 
-          await createAdminNotification(notification);
+          //await createAdminNotification(notification);
           await emailSettingService.create({ description1: "", description2: "", endsWith: "", addedBy: createdUser._id })
           return res.status(201).json({
             success: true,
@@ -515,7 +515,6 @@ const accountActivateByClient = async (req, res) => {
   try {
     const deactivationDate = new Date();
     const userDeactivate = await authService.update(id, {
-      isActivateAccount: false,
       DeactivateAccountDate: ""
     });
     const user = await accountactivationMail(firstname, email);
