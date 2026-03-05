@@ -376,7 +376,7 @@ const stripePlanListWithCoupons = async () => {
         finalProducts.push(productData);
         return finalProducts;
       });
-    return finalProducts;
+    return { data: finalProducts };
   } catch (e) {
     throw new Error(500, e.message);
   }
