@@ -100,7 +100,7 @@ const sendForgotPasswordMailForFrontend = async (values) => {
       <a href = ${process.env.CLIENT_URL_FRONT}/resetPassword/${token}>Click Here</a>
       `,
     };
-    return mail.sendMailerHtml(mailOptions);
+    return await mail.sendMailerHtml(mailOptions);
   } catch (error) {
     throw error;
   }
