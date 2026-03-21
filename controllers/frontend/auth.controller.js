@@ -227,6 +227,8 @@ const onActivateAccount = async (req, res) => {
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    console.log("Forgot password request for:", email);
+    
     let result1 = await authService.findOne({ email });
     if (!result1) {
       return res.status(200).send({
@@ -239,19 +241,24 @@ const forgotPassword = async (req, res) => {
       });
     } else {
       const token = await generateToken(result1, Math.floor(Date.now() / 1000) + (60 * 60 * 48));
+      console.log("Token generated, attempting to send email...");
+      
       await sendForgotPasswordMailForFrontend({
         token: token,
         email: email,
       });
-
+      
+      console.log("Email function completed");
       return res.status(200).json({
         message: "Email sent successfully",
       });
     }
   } catch (error) {
+    console.error("Forgot password error:", error);
+    console.error("Error stack:", error.stack);
     return res.status(500).json({
       message: "Internal Server Error",
-      error,
+      error: error.message,
     });
   }
 };
