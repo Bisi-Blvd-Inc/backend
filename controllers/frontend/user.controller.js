@@ -583,8 +583,7 @@ const encryptId = async (req, res) => {
   try {
     const { id } = req.body;
 
-    const encryptedString1 = cryptr.encrypt(id);
-    const encryptedString = encryptedString1.substring(0, 50);
+    const encryptedString = cryptr.encrypt(id);
     if (!encryptedString) {
       return res.status(200).json({
         message: "Client id not valid",
