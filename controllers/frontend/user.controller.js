@@ -559,7 +559,7 @@ const userWebhook = async (req, res) => {
       };
       const update = await userCollection.findByIdAndUpdate(userId, obj);
       // BBCAN Enterprise Auto-Assignment
-      if (user?.planDeatils?.priceId === "price_1ShGxPJ1yWXXxAIet1miD2ZM") {
+      if (user?.planDeatils?.priceId === "price_1TTqOlJ1yWXXxAIexphWW9ds") {
         try {
           const enterpriseCollection = require("../../models/enterprise");
           const bbcanEnterprise = await enterpriseCollection.findOne({
