@@ -34,13 +34,14 @@ const checkAllUsersWithDeactivate = async () => {
             // Cancel subscription if current time is past the new subscription end date
             if (user.paymentStatus == 1) {
 
-
-              const subscription = await stripe.subscriptions.cancel(user.subscription.id);
-
-              const deletedSubscription = await users.findByIdAndUpdate(
-                user._id,
-                { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
-              );
+              if (user.subscription && user.subscription.id) {
+                const subscription = await stripe.subscriptions.cancel(user.subscription.id);
+  
+                const deletedSubscription = await users.findByIdAndUpdate(
+                  user._id,
+                  { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
+                );
+              }
             }
           }
         } else {
@@ -56,11 +57,13 @@ const checkAllUsersWithDeactivate = async () => {
             if (currentTime >= newSubscriptionEndDate) {
               if (user.paymentStatus == 1) {
                 // Cancel subscription if current time is past the new subscription end date
-                await stripe.subscriptions.cancel(user.subscription.id);
-                const deletedSubscription = await users.findByIdAndUpdate(
-                  user._id,
-                  { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
-                );
+                if (user.subscription && user.subscription.id) {
+                  await stripe.subscriptions.cancel(user.subscription.id);
+                  const deletedSubscription = await users.findByIdAndUpdate(
+                    user._id,
+                    { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
+                  );
+                }
               }
             }
           } else {
@@ -71,11 +74,13 @@ const checkAllUsersWithDeactivate = async () => {
             if (currentTime >= deactivateDate) {
               // Cancel subscription if current time is past the deactivate date
               if (user.paymentStatus == 1) {
-                await stripe.subscriptions.cancel(user.subscription.id);
-                const deletedSubscription = await users.findByIdAndUpdate(
-                  user._id,
-                  { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
-                );
+                if (user.subscription && user.subscription.id) {
+                  await stripe.subscriptions.cancel(user.subscription.id);
+                  const deletedSubscription = await users.findByIdAndUpdate(
+                    user._id,
+                    { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
+                  );
+                }
               }
             }
           }
@@ -86,10 +91,12 @@ const checkAllUsersWithDeactivate = async () => {
           deactivateDate30days.getMonth() === currentTime.getMonth() &&
           deactivateDate30days.getDate() === currentTime.getDate()
         ) {
-
-          await users.findByIdAndUpdate(
-            user._id, { paymentStatus: 0, status: 0, HistoryActivateStatus: false }
-          );
+          // Only deactivate if they truly have no active subscription
+          if (user.subscriptionStatus === false && user.paymentStatus === 0) {
+            await users.findByIdAndUpdate(
+              user._id, { paymentStatus: 0, status: 0, HistoryActivateStatus: false }
+            );
+          }
         }
       })
     );

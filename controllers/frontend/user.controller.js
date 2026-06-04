@@ -559,7 +559,7 @@ const userWebhook = async (req, res) => {
       };
       const update = await userCollection.findByIdAndUpdate(userId, obj);
       // BBCAN Enterprise Auto-Assignment
-      if (user?.planDeatils?.priceId === "price_1ShGxPJ1yWXXxAIet1miD2ZM") {
+      if (user?.planDeatils?.priceId === "price_1TTqOlJ1yWXXxAIexphWW9ds") {
         try {
           const enterpriseCollection = require("../../models/enterprise");
           const bbcanEnterprise = await enterpriseCollection.findOne({
@@ -584,8 +584,7 @@ const encryptId = async (req, res) => {
   try {
     const { id } = req.body;
 
-    const encryptedString1 = cryptr.encrypt(id);
-    const encryptedString = encryptedString1.substring(0, 50);
+    const encryptedString = cryptr.encrypt(id);
     if (!encryptedString) {
       return res.status(200).json({
         message: "Client id not valid",

@@ -228,7 +228,12 @@ const decryptId = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
+    console.log('Decrypt error:', error.message);
+    return res.status(400).json({
+      message: "Invalid or expired booking link",
+      error: error.message,
+      status: 400,
+    });
   }
 };
 

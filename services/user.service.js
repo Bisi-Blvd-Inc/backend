@@ -323,13 +323,16 @@ const stripeCouponPlans = async () => {
     // Check if Stripe key exists before making the call
     if (!process.env.STRIPE_SK_KEY || process.env.STRIPE_SK_KEY === '') {
       console.log('Stripe API key not configured - skipping coupon validation');
-      return null; // Return null for invalid coupon when Stripe not configured
+      return { data: [] };
     }
-    const coupons = await stripe.coupons.retrieve(coupon);
+    const coupons = await stripe.coupons.list({
+      limit: 100
+    });
+    
     return coupons;
   } catch (e) {
     console.log('Stripe coupon error:', e.message);
-    return null; // Return null for invalid coupon
+    return { data: [] };
   }
 };
 
@@ -376,7 +379,7 @@ const stripePlanListWithCoupons = async () => {
         finalProducts.push(productData);
         return finalProducts;
       });
-    return finalProducts;
+    return { data: finalProducts };
   } catch (e) {
     throw new Error(500, e.message);
   }
