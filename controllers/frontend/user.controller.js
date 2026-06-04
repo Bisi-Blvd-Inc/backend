@@ -577,7 +577,6 @@ const userWebhook = async (req, res) => {
       }
     }
   }
-  }
 };
 
 const encryptId = async (req, res) => {
