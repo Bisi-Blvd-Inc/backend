@@ -693,9 +693,10 @@ const createExternalBooking = async (req, res) => {
 
     const salonOwner = await userCollection.findById(userId);
     if (salonOwner.isActivateAccount == true) {
+      console.log("Link is Expired-isActivateAccount is true");
       return res.status(400).json({
         success: true,
-        message: "Link is Expired",
+        message: "Link is Expired-isActivateAccount is true",
         status: 400,
       });
     }
