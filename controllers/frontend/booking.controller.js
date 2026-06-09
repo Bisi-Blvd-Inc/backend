@@ -2420,6 +2420,53 @@ const makeBookingPayment = async (req, res) => {
 }
 }
 
+
+ @@ -2449,3 +2449,41 @@ module.exports = {
+   getProviderBySearch,
+   getProviderBySearch,
+   makeBookingPayment
+   makeBookingPayment
+ };
+ };
+
+const updatePaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { servicePrice, paymentType } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking ID is required",
+      });
+    }
+
+    const updatedBooking = await bookingService.update(
+      { _id: id },
+      { $set: { servicePrice, paymentType } },
+      { new: true }
+    );
+
+    if (!updatedBooking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: updatedBooking,
+      message: "Payment status updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   bookingFilter,
@@ -2447,5 +2494,6 @@ module.exports = {
   getRecentProviders,
   getAppointmentHistory,
   getProviderBySearch,
-  makeBookingPayment
+  makeBookingPayment,
+  updatePaymentStatus
 };
