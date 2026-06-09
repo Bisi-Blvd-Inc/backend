@@ -2420,15 +2420,6 @@ const makeBookingPayment = async (req, res) => {
 }
 }
 
-
- @@ -2449,3 +2449,41 @@ module.exports = {
-   getProviderBySearch,
-   getProviderBySearch,
-   makeBookingPayment
-   makeBookingPayment
- };
- };
-
 const updatePaymentStatus = async (req, res) => {
   try {
     const { id } = req.params;
