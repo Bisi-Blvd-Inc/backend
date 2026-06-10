@@ -63,7 +63,7 @@ const signup = async (req, res) => {
         const {email, password} = req.body;
         const user = await authService.findOne({email});
         if (user) {
-            return res.status(400).json({message: "Email Already Exists"});
+            return res.status(402).json({message: "Email Already Exists"});
         }
 
         bcrypt.hash(password.toString(), 10, async (err, hash) => {
