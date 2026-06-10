@@ -138,7 +138,7 @@ const signup = async (req, res) => {
 
 
           const createdUser = await authService.post(newUser);
-
+          const createdUserFromDB = await authService.get(createdUser._id);
           sendLeadConnectorWebhook(createdUser);
 
           await sendActivationMail(email);
@@ -157,6 +157,7 @@ const signup = async (req, res) => {
             success: true,
             message: "Registered successfully, Please verify email!",
             data: createdUser,
+            createdUserFromDB: createdUserFromDB
           });
         } catch (error) {
           return res.status(500).json({
