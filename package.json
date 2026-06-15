@@ -28,7 +28,7 @@
     "express-validator": "^6.12.1",
     "fs": "^0.0.1-security",
     "google-auth-library": "^8.6.0",
-    "googleapis": "^173.0.0",
+    "googleapis": "^105.0.0",
     "isodate": "^0.1.4",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^8.5.1",
