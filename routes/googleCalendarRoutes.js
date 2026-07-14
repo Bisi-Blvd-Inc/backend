@@ -164,7 +164,11 @@ router.delete("/delete/:eventId", async (req, res) => {
 router.get("/status", (req, res) => {
   res.json({
     success: true,
-    credentialsExists: fs.existsSync(CREDENTIALS_PATH),
+    googleCredentialsPath: process.env.GOOGLE_CREDENTIALS_PATH || null,
+    credentialsExists:
+      process.env.GOOGLE_CREDENTIALS_PATH
+        ? fs.existsSync(process.env.GOOGLE_CREDENTIALS_PATH)
+        : false,
     tokenExists: fs.existsSync(TOKEN_PATH),
   });
 });
