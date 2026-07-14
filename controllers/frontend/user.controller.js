@@ -692,7 +692,7 @@ const createExternalBooking = async (req, res) => {
     const endsWith = emailSettingData?.endsWith || "";
 
     const salonOwner = await userCollection.findById(userId);
-    if (salonOwner.isActivateAccount == true) {
+    if (salonOwner.isActivateAccount == false) {
       return res.status(400).json({
         success: true,
         message: "Link is Expired",
@@ -2376,7 +2376,7 @@ const createMultipleProducts = async (req, res) => {
       ?.map((item) => `${item?.name}`)
       .join(", ");
     const salonOwner = await userCollection.findById(userId);
-    if (salonOwner?.isActivateAccount == true) {
+    if (salonOwner?.isActivateAccount == false) {
       return res.status(400).json({
         success: true,
         message: "Link is Expired",
