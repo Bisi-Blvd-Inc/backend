@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 
 // Load Google credentials
-const CREDENTIALS_PATH = path.join(__dirname, "../config/credentials.json");
+const CREDENTIALS_PATH = process.env.GOOGLE_CREDENTIALS_PATH;
 const TOKEN_PATH = path.join(__dirname, "../config/token.json");
 
 // Helper: Load OAuth2 client
