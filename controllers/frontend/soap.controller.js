@@ -74,7 +74,7 @@ const getSoap = async (req, res) => {
 
 const getAll = async (req, res) => {
   try {
-    const soaps = await usersoap.find();
+    const soaps = await usersoap.find({ addedBy: req._user });
     console.log("Soap : "+soaps);
     res.status(200).json({ msg:soaps });
   } catch (error) {
