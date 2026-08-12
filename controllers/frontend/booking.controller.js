@@ -1880,6 +1880,7 @@ const searchAppointmentDateandName = async (req, res) => {
           },
           name: 1,
           email: 1,
+          phoneNumber: 1,
           service: 1,
           paymentType: 1,
           startDateTime: 1,
