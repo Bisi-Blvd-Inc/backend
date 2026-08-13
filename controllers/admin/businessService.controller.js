@@ -160,7 +160,7 @@ const deleteBusinessService = async (req, res) => {
       { $set: { isDeleted: true } }
     );
 
-    if (response.nModified > 0) {
+    if (response.modifiedCount > 0) {
       return res.status(200).json({
         success: true,
         message: "Business Service Deleted Successfully",
