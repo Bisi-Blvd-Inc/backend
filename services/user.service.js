@@ -115,11 +115,22 @@ const getDateDiff = (condition) => {
 const updateUser = async (Id, userBody) => {
   try {
     const user = await userCollection.findById(Id);
-    const coupons = await stripe.coupons.list({
-      limit: 100
-    });
-    const desiredCouponName = userBody.planDeatils.couponName;
-    const selectedCoupon = coupons.data.find(coupon => coupon.name === desiredCouponName.trim());
+    // Coupon codes typed at checkout are Stripe Promotion Codes (the
+    // customer-facing string), not Coupon objects — a Coupon's `name` field
+    // is an internal dashboard label and essentially never matches what a
+    // customer types in. Also guard against no coupon being entered at all,
+    // which previously threw (.trim() on undefined) and failed checkout
+    // entirely even for customers not using a coupon.
+    const desiredCouponName = userBody.planDeatils.couponName?.trim();
+    let selectedPromotionCode = null;
+    if (desiredCouponName) {
+      const promotionCodes = await stripe.promotionCodes.list({
+        code: desiredCouponName,
+        active: true,
+        limit: 1,
+      });
+      selectedPromotionCode = promotionCodes.data[0];
+    }
     let customerId = user?.subscription?.customer;
     if (customerId) {
       const paymentMethodFinal = await stripe.paymentMethods.attach(
@@ -134,7 +145,7 @@ const updateUser = async (Id, userBody) => {
             default_payment_method: userBody.cardDetails.id,
             expand: ["latest_invoice.payment_intent"],
             items: [{ price: userBody.planDeatils.priceId }],
-            coupon: selectedCoupon?.id
+            promotion_code: selectedPromotionCode?.id
           });
         } catch (error) {
           console.log(error);
@@ -212,7 +223,7 @@ const updateUser = async (Id, userBody) => {
               default_payment_method: userBody.cardDetails.id,
               expand: ["latest_invoice.payment_intent"],
               items: [{ price: userBody.planDeatils.priceId }],
-              coupon: selectedCoupon?.id,
+              promotion_code: selectedPromotionCode?.id,
             });
           } catch (error) {
             throw new Error(500, "Subscription creation failed");
