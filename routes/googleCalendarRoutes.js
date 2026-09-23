@@ -4,7 +4,7 @@ const { google } = require("googleapis");
 const db = require("../config/firebase");
 const path = require("path");
 const fs = require("fs");
-const { authMiddleware } = require("../../middlewares/frontend/authMiddleware");
+const { authMiddleware } = require("../middlewares/frontend/authMiddleware");
 
 // Load Google credentials
 const CREDENTIALS_PATH = process.env.GOOGLE_CREDENTIALS_PATH;
