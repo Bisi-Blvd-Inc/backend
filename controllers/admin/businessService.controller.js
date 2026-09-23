@@ -4,12 +4,72 @@ const userCollection = require("../../models/user");
 const goalsCompanyBudget = require("../../models/goalsCompanyBudget");
 const Business = require("../../models/business");
 const serviceSchema = require("../../models/serviceSetting");
+const inventoryModel = require("../../models/inventory");
 const Mongoose = require("mongoose");
+
+// Mirrors a service's inventory list (typed inline on the Add Service
+// modal) into the real Inventory collection, so it shows up on the
+// Inventory page too — not just as an informal sub-list on the service.
+// Matches by product name (case-insensitive) per subscriber so reusing
+// the same item across multiple services links to one Inventory
+// document (Inventory.service is an array for exactly this reason)
+// instead of creating a duplicate per service. servicesUsedIn (picked
+// from the modal's service dropdown) are additional service ids beyond
+// the one just created — the current service is always linked too.
+const syncInventoryItems = async (userId, serviceId, inventoryItems) => {
+  if (!Array.isArray(inventoryItems)) return;
+
+  for (const item of inventoryItems) {
+    if (!item?.productName?.trim()) continue;
+
+    const linkedServiceIds = [
+      serviceId,
+      ...(Array.isArray(item.servicesUsedIn) ? item.servicesUsedIn : []),
+    ];
+
+    const existing = await inventoryModel.findOne({
+      userId,
+      isDeleted: false,
+      name: new RegExp(`^${item.productName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+    });
+
+    const estUsageValue = Number(item.estUses) || 0;
+    const newEstUsageEntries = linkedServiceIds.map((sId) => ({
+      serviceId: sId,
+      value: estUsageValue,
+    }));
+
+    if (existing) {
+      const alreadyLinked = new Set(existing.service.map((s) => String(s)));
+      const newServiceIds = linkedServiceIds.filter((sId) => !alreadyLinked.has(String(sId)));
+      await inventoryModel.updateOne(
+        { _id: existing._id },
+        {
+          $addToSet: { service: { $each: linkedServiceIds } },
+          $push: {
+            estUsage: {
+              $each: newEstUsageEntries.filter((e) => newServiceIds.includes(e.serviceId)),
+            },
+          },
+        }
+      );
+    } else {
+      await new inventoryModel({
+        userId,
+        name: item.productName.trim(),
+        price: Number(item.price) || 0,
+        productstock: Number(item.inStock) || 0,
+        service: linkedServiceIds,
+        estUsage: newEstUsageEntries,
+      }).save();
+    }
+  }
+};
 
 
 const createBusinessService = async (req, res) => {
   try {
-    const { businessTypeId, service, price, hours, minutes } = req.body;
+    const { businessTypeId, service, price, hours, minutes, inventory } = req.body;
 
     const role = await userCollection.findOne({ _id: req._user });
     const existsBusinessType = await businessServiceCollection.find({
@@ -48,9 +108,12 @@ const createBusinessService = async (req, res) => {
         addedBy: req._user,
         role: role.role,
         serviceTime,
+        inventory,
       };
 
       const createdService = await businessService.post(serviceObject);
+
+      await syncInventoryItems(req._user, createdService._id, inventory);
 
       const getService = await goalsCompanyBudget.find({ addedBy: req._user });
 
