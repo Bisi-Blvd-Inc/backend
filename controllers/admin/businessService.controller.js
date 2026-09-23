@@ -4,7 +4,51 @@ const userCollection = require("../../models/user");
 const goalsCompanyBudget = require("../../models/goalsCompanyBudget");
 const Business = require("../../models/business");
 const serviceSchema = require("../../models/serviceSetting");
+const inventoryModel = require("../../models/inventory");
 const Mongoose = require("mongoose");
+
+// Mirrors a service's inventory list (typed inline on the Add Service
+// modal) into the real Inventory collection, so it shows up on the
+// Inventory page too — not just as an informal sub-list on the service.
+// Matches by product name (case-insensitive) per subscriber so reusing
+// the same item across multiple services links to one Inventory
+// document (Inventory.service is an array for exactly this reason)
+// instead of creating a duplicate per service.
+const syncInventoryItems = async (userId, serviceId, inventoryItems) => {
+  if (!Array.isArray(inventoryItems)) return;
+
+  for (const item of inventoryItems) {
+    if (!item?.productName?.trim()) continue;
+
+    const existing = await inventoryModel.findOne({
+      userId,
+      isDeleted: false,
+      name: new RegExp(`^${item.productName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+    });
+
+    const estUsageValue = Number(item.estUses) || 0;
+
+    if (existing) {
+      await inventoryModel.updateOne(
+        { _id: existing._id },
+        {
+          $addToSet: { service: serviceId },
+          $push: { estUsage: { serviceId, value: estUsageValue } },
+        }
+      );
+    } else {
+      await new inventoryModel({
+        userId,
+        name: item.productName.trim(),
+        price: Number(item.price) || 0,
+        productstock: Number(item.inStock) || 0,
+        description: item.servicesUsedIn || undefined,
+        service: [serviceId],
+        estUsage: [{ serviceId, value: estUsageValue }],
+      }).save();
+    }
+  }
+};
 
 
 const createBusinessService = async (req, res) => {
@@ -52,6 +96,8 @@ const createBusinessService = async (req, res) => {
       };
 
       const createdService = await businessService.post(serviceObject);
+
+      await syncInventoryItems(req._user, createdService._id, inventory);
 
       const getService = await goalsCompanyBudget.find({ addedBy: req._user });
 
