@@ -92,6 +92,13 @@ jobs:
           # Start the application
           pm2 start app.js
 
+          # Persist the process list so PM2 can resurrect it on server
+          # reboot (requires `pm2 startup` to have been run once on this
+          # host — see the reliability-fix notes). Without this, a routine
+          # AWS maintenance reboot leaves the backend down until someone
+          # manually runs `pm2 start app.js` again.
+          pm2 save
+
           # Restart web server (if httpd is used)
           sudo systemctl restart httpd 2>/dev/null || echo "httpd not available or not needed"
 

@@ -392,11 +392,49 @@ const fetchBookingHistoryByEmail = async (email, limit = 10, offset = 0) => {
   return result;
 };
 
+// Sums servicePrice for a subscriber's bookings in [startDate, endDate),
+// split into realized revenue (Completed) and pipeline revenue (Confirmed
+// but not yet completed) in a single pass. Uses `startDate` (a real Date
+// field) rather than `startDateTime` (a free-text String field) so the
+// range match is reliable — see the note on `getBooingWithDate` above,
+// which filters on a field that doesn't exist on the schema.
+const getRevenueSummary = async (userId, startDate, endDate) => {
+  const result = await bookingCollection.aggregate([
+    {
+      $match: {
+        userId: mongoose.Types.ObjectId(userId),
+        isDeleted: { $ne: true },
+        bookingStatus: { $in: ["Completed", "Confirmed"] },
+        startDate: { $gte: startDate, $lt: endDate },
+      },
+    },
+    {
+      $group: {
+        _id: "$bookingStatus",
+        total: { $sum: { $ifNull: ["$servicePrice", 0] } },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const byStatus = Object.fromEntries(
+    result.map((r) => [r._id, { total: r.total, count: r.count }])
+  );
+
+  return {
+    actualRevenue: byStatus.Completed?.total || 0,
+    completedCount: byStatus.Completed?.count || 0,
+    bookedNotYetCompleted: byStatus.Confirmed?.total || 0,
+    pendingCount: byStatus.Confirmed?.count || 0,
+  };
+};
+
 module.exports = {
   post,
   update,
   get,
   findOne,
+  getRevenueSummary,
   find,
   findById,
   findByName,

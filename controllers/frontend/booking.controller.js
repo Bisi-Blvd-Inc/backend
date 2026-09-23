@@ -24,6 +24,7 @@ const {getToken} = require("../../helpers/helper");
 const mongoose = require("mongoose");
 const userCollection = require("../../models/user");
 const stripe = require("stripe");
+const { decryptSecret } = require("../../helpers/paymentCrypto");
 const paymentCollection = require("../../models/paymentHistory");
 const serviceSettingCollection = require("../../models/serviceSetting");
 // const createBooking = async (req, res) => {
@@ -2284,7 +2285,7 @@ const makeBookingPayment = async (req, res) => {
 
   let stripeInstance;
   try {
-    stripeInstance = stripe(provider.secretKey);
+    stripeInstance = stripe(decryptSecret(provider.secretKey));
   } catch (err) {
     return res
         .status(500)

@@ -2,6 +2,7 @@ const companyService = require("../../services/companyBudget.service");
 const userCollection = require("../../models/user");
 const company_budgets = require("../../models/goalsCompanyBudget");
 const companyBudgetService = require("../../services/companyBudget.service");
+const bookingService = require("../../services/booking.service");
 const mongoose = require("mongoose");
 const { pick } = require("lodash");
 const businessSchema = require("../../models/businessService");
@@ -271,6 +272,51 @@ const getGoalById = async (req, res) => {
 };
 
 
+// Booked services (real bookings) vs. planned profit (the subscriber's own
+// revenue goal from the Goals page, stored as accurateGoals.monthlyGoals).
+// `month` is "YYYY-MM"; defaults to the current month if omitted.
+const getProfitComparison = async (req, res) => {
+  try {
+    const addedBy = req._user;
+    const monthParam = req.query.month;
+
+    const now = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
+    if (isNaN(now.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid month — expected format YYYY-MM",
+      });
+    }
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const goalsBudget = await company_budgets.findOne({ addedBy });
+    const plannedProfit = goalsBudget?.accurateGoals?.monthlyGoals || 0;
+
+    const { actualRevenue, completedCount, bookedNotYetCompleted, pendingCount } =
+      await bookingService.getRevenueSummary(addedBy, startDate, endDate);
+
+    return res.status(200).json({
+      success: true,
+      message: "Profit comparison fetched successfully",
+      data: {
+        month: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}`,
+        plannedProfit,
+        actualRevenue,
+        completedCount,
+        bookedNotYetCompleted,
+        pendingCount,
+        delta: actualRevenue - plannedProfit,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
+
 module.exports = {
   comapny_budget,
   editCompanyBudget,
@@ -278,5 +324,6 @@ module.exports = {
   getGoalBudget,
   saveGoalsBudget,
   getGoalById,
-  getProviderBusiness
+  getProviderBusiness,
+  getProfitComparison,
 };

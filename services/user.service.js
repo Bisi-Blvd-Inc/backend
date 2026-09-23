@@ -69,6 +69,17 @@ const getUser = (condition) => {
   return userCollection.findById(condition);
 };
 
+// Used by the unauthenticated public-booking lookup (getUserExternal) — only
+// the fields that flow need are selected, so a secret (Stripe secretKey,
+// password hash, etc) is never sent to an anonymous browser.
+const getExternalUser = (id) => {
+  return userCollection
+    .findById(id)
+    .select(
+      "businessName firstName lastName publicKey fcmToken isActivateAccount isDeleted"
+    );
+};
+
 const getDateDiff = (condition) => {
   let date = new Date();
   return userCollection.aggregate([
@@ -395,6 +406,7 @@ module.exports = {
   stripeFinalList,
   stripePriceList,
   getUser,
+  getExternalUser,
   getDateDiff,
   getDateWithNoDiff,
   stripeCouponPlans,
