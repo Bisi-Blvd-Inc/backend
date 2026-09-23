@@ -6,6 +6,21 @@ const plaidProvider = require("../../services/bankProvider/plaid.provider");
 const { encryptSecret, decryptSecret } = require("../../helpers/paymentCrypto");
 const { BUDGET_CATEGORIES } = require("../../helpers/budgetCategoryMap");
 
+// Plaid's SDK throws an axios error whose generic .message (e.g. "Request
+// failed with status code 400") hides the actual reason — that lives in
+// error.response.data (error_code/error_message from Plaid itself). Log
+// the full body server-side and surface Plaid's message to the client so
+// a 400/401 is actually debuggable instead of just "status code 400".
+const describePlaidError = (error, context) => {
+  const plaidBody = error.response?.data;
+  if (plaidBody) {
+    console.error(`Plaid error during ${context}:`, plaidBody);
+    return plaidBody.error_message || plaidBody.error_code || error.message;
+  }
+  console.error(`Error during ${context}:`, error);
+  return error.message;
+};
+
 const createLinkToken = async (req, res) => {
   try {
     // If there's an existing connection in "error" status, put Link into
@@ -26,7 +41,10 @@ const createLinkToken = async (req, res) => {
     );
     return res.status(200).json({ success: true, linkToken });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: describePlaidError(error, "createLinkToken"),
+    });
   }
 };
 
@@ -65,7 +83,10 @@ const exchangeToken = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: describePlaidError(error, "exchangeToken"),
+    });
   }
 };
 
