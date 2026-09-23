@@ -13,12 +13,19 @@ const Mongoose = require("mongoose");
 // Matches by product name (case-insensitive) per subscriber so reusing
 // the same item across multiple services links to one Inventory
 // document (Inventory.service is an array for exactly this reason)
-// instead of creating a duplicate per service.
+// instead of creating a duplicate per service. servicesUsedIn (picked
+// from the modal's service dropdown) are additional service ids beyond
+// the one just created — the current service is always linked too.
 const syncInventoryItems = async (userId, serviceId, inventoryItems) => {
   if (!Array.isArray(inventoryItems)) return;
 
   for (const item of inventoryItems) {
     if (!item?.productName?.trim()) continue;
+
+    const linkedServiceIds = [
+      serviceId,
+      ...(Array.isArray(item.servicesUsedIn) ? item.servicesUsedIn : []),
+    ];
 
     const existing = await inventoryModel.findOne({
       userId,
@@ -27,13 +34,23 @@ const syncInventoryItems = async (userId, serviceId, inventoryItems) => {
     });
 
     const estUsageValue = Number(item.estUses) || 0;
+    const newEstUsageEntries = linkedServiceIds.map((sId) => ({
+      serviceId: sId,
+      value: estUsageValue,
+    }));
 
     if (existing) {
+      const alreadyLinked = new Set(existing.service.map((s) => String(s)));
+      const newServiceIds = linkedServiceIds.filter((sId) => !alreadyLinked.has(String(sId)));
       await inventoryModel.updateOne(
         { _id: existing._id },
         {
-          $addToSet: { service: serviceId },
-          $push: { estUsage: { serviceId, value: estUsageValue } },
+          $addToSet: { service: { $each: linkedServiceIds } },
+          $push: {
+            estUsage: {
+              $each: newEstUsageEntries.filter((e) => newServiceIds.includes(e.serviceId)),
+            },
+          },
         }
       );
     } else {
@@ -42,9 +59,8 @@ const syncInventoryItems = async (userId, serviceId, inventoryItems) => {
         name: item.productName.trim(),
         price: Number(item.price) || 0,
         productstock: Number(item.inStock) || 0,
-        description: item.servicesUsedIn || undefined,
-        service: [serviceId],
-        estUsage: [{ serviceId, value: estUsageValue }],
+        service: linkedServiceIds,
+        estUsage: newEstUsageEntries,
       }).save();
     }
   }
