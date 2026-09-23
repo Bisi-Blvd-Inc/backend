@@ -71,7 +71,7 @@ const exchangeToken = async (req, res) => {
         status: "connected",
         errorCode: null,
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     return res.status(200).json({
