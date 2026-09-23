@@ -89,8 +89,13 @@ jobs:
           # Stop existing PM2 processes
           pm2 delete all
 
-          # Start the application
-          pm2 start app.js
+          # Start the application. --cwd is explicit (not just relying on
+          # this script's `cd` above) because config/database.js loads
+          # .env via dotenv's default behavior, which reads from the
+          # running process's cwd, not the script's own directory — PM2
+          # has previously started this app with the wrong cwd, which
+          # silently left every env var (including MONGO_URL) undefined.
+          pm2 start app.js --cwd "$(pwd)"
 
           # Persist the process list so PM2 can resurrect it on server
           # reboot (requires `pm2 startup` to have been run once on this
