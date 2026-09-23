@@ -16,8 +16,8 @@ const createUser = async (req, res) => {
     const user = await usersService.findEmail({ email: email, role: 2 });
 
     if (user && user.isDeleted === false) {
-      return res.status(400).json({
-        status: 400,
+      return res.status(401).json({
+        status: 401,
         message: "Email Already Exists",
       });
     }

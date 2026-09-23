@@ -18,5 +18,6 @@ router.put(
 );
 router.get("/getcompanyGoalBudget", companyController.getGoalBudget);
 router.get("/getBudgetById/:id", companyController.getGoalById);
+router.get("/profit-comparison", companyController.getProfitComparison);
 
 module.exports = router;

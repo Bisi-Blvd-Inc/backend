@@ -3,6 +3,7 @@ const businessService = require("../../models/businessService");
 const userCollection = require("../../models/user");
 const mongoose = require("mongoose");
 const emailSettingService=require('../../models/emailSetting')
+const { encryptSecret } = require("../../helpers/paymentCrypto");
 const createService = async (req, res) => {
   try {
     const { service } = req.body;
@@ -105,7 +106,7 @@ const updateStripeDetail = async (req, res) => {
 
     if (user) {
       const obj = {
-        secretKey: secretKey,
+        secretKey: encryptSecret(secretKey),
         publicKey: publicKey,
       };
       let result = await userCollection.findByIdAndUpdate(

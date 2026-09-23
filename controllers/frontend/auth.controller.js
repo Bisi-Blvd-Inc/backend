@@ -109,7 +109,7 @@ const signup = async (req, res) => {
     );
     // Now, resultsArray contains the results for each business type
     if (user?.HistoryActivateStatus == true && user?.status == 1 || user?.status == 1) {
-      return res.status(400).json({
+      return res.status(403).json({
         message: "Email Already Exists",
       });
     }
@@ -118,7 +118,7 @@ const signup = async (req, res) => {
       sendReturnuser(req?.body?.firstName, resultsArray)
       return res.status(201).json({
         success: true,
-        message: "You having already having an account, Please verify email!",
+        message: "You already have an account, Please verify email!",
         data: user,
       });
 
@@ -138,7 +138,7 @@ const signup = async (req, res) => {
 
 
           const createdUser = await authService.post(newUser);
-
+          const createdUserFromDB = await authService.get(createdUser._id);
           sendLeadConnectorWebhook(createdUser);
 
           await sendActivationMail(email);
@@ -157,6 +157,7 @@ const signup = async (req, res) => {
             success: true,
             message: "Registered successfully, Please verify email!",
             data: createdUser,
+            createdUserFromDB: createdUserFromDB
           });
         } catch (error) {
           return res.status(500).json({
@@ -522,7 +523,7 @@ const accountActivateByClient = async (req, res) => {
   const { firstname, email } = req.body
   const { id } = req.params
   try {
-    const deactivationDate = new Date();
+    // const deactivationDate = new Date(); not needed here as we are activating the account
     const userDeactivate = await authService.update(id, {
       DeactivateAccountDate: ""
     });
@@ -536,7 +537,7 @@ const accountActivateByClient = async (req, res) => {
       message: "Account activated successfully",
     });
   } catch (error) {
-    console.error("Error deactivating user account:", error);
+    console.error("Error activating user account:", error);
   }
 }
 
@@ -546,7 +547,7 @@ const bookingClientSignUp = async (req, res) => {
   const user = await authService.findOne({ email, isDeleted: false });
 
   if (user) {
-    return res.status(400).json({
+    return res.status(405).json({
       message: "Email Already Exists",
     });
   }

@@ -35,27 +35,47 @@ const createEnterprise = async (req, res) => {
             return res.status(400).json({ error: "Something went wrong" });
           }
 
-          const newUser = {
-            email,
-            password: hash,
-            firstName: contactName,
-            businessName: enterpriseName,
-            phone,
-            businessType,
-            withEnterprise: true,
-            isEnterpriseAdmin: true,
-            role: 2,
-            status: 1,
-          };
-          const createdUser = await authService.post(newUser);
+          // `user` may already exist (e.g. someone who signed up as a
+          // regular subscriber but never activated). Link the enterprise to
+          // that existing account instead of creating a second, disconnected
+          // User document under the same email.
+          let ownerUser;
+          if (user) {
+            await authService.update(user._id, {
+              password: hash,
+              firstName: contactName,
+              businessName: enterpriseName,
+              phone,
+              businessType,
+              withEnterprise: true,
+              isEnterpriseAdmin: true,
+              role: 2,
+              status: 1,
+            });
+            ownerUser = user;
+          } else {
+            const newUser = {
+              email,
+              password: hash,
+              firstName: contactName,
+              businessName: enterpriseName,
+              phone,
+              businessType,
+              withEnterprise: true,
+              isEnterpriseAdmin: true,
+              role: 2,
+              status: 1,
+            };
+            ownerUser = await authService.post(newUser);
+          }
 
-          sendLeadConnectorWebhook(createdUser);
+          sendLeadConnectorWebhook(ownerUser);
           await sendActivationMail(email);
 
           const enterprise = await enterpriseService.createEnterprise({
             ...req.body,
             password: hash,
-            userId: createdUser?._id,
+            userId: ownerUser?._id,
             userKeys: [],
           });
 

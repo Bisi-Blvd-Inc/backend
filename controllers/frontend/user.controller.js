@@ -45,6 +45,7 @@ const Cryptr = require("cryptr");
 const cryptr = new Cryptr("secretKey");
 const moment = require("moment");
 const stripe = require("stripe");
+const { decryptSecret } = require("../../helpers/paymentCrypto");
 const countryCodes = require("country-codes-list");
 const User = require("../../models/user");
 const { createNotification } = require("./notification.controller");
@@ -695,7 +696,7 @@ const createExternalBooking = async (req, res) => {
     if (salonOwner.isActivateAccount == false) {
       return res.status(400).json({
         success: true,
-        message: "Link is Expired",
+        message: "Link is Expired-isActivateAccount is true",
         status: 400,
       });
     }
@@ -1740,7 +1741,7 @@ const ExternalBookingPayment = async (req, res) => {
 
     let stripeInstance;
     try {
-      stripeInstance = stripe(salonOwner.secretKey);
+      stripeInstance = stripe(decryptSecret(salonOwner.secretKey));
     } catch (err) {
       return res
         .status(500)
@@ -1888,7 +1889,7 @@ const ExternalBookingPayment = async (req, res) => {
 const getUserForExternal = async (req, res) => {
   try {
     const { id } = req.params;
-    const response = await userService.getUser(id);
+    const response = await userService.getExternalUser(id);
     if (response) {
       return res.status(200).json({
         success: true,
@@ -1962,7 +1963,7 @@ const retrieveInvoice = async (req, res) => {
   try {
     const { userId, invoiceId } = req.body;
     const salonOwner = await userCollection.findById(userId);
-    const stripeInstance = stripe(salonOwner.secretKey);
+    const stripeInstance = stripe(decryptSecret(salonOwner.secretKey));
 
     const invoice = await stripeInstance.invoices.retrieve(invoiceId);
 
@@ -2175,7 +2176,7 @@ const addCard = async (req, res) => {
     console.log("found user");
 
     console.log("creating up stripe instance");
-    const stripeInstance = stripe(salonOwner.secretKey);
+    const stripeInstance = stripe(decryptSecret(salonOwner.secretKey));
     console.log("created stripe instance");
 
     console.log(`searching for customer with email ${email}`);
@@ -2535,7 +2536,7 @@ const handleProductsPayment = async (req, res) => {
 
     const salonOwner = await userCollection.findById(userId);
 
-    const stripeInstance = stripe(salonOwner?.secretKey);
+    const stripeInstance = stripe(decryptSecret(salonOwner?.secretKey));
     const stripeProducts = await stripeInstance.products.list();
     let stripeProduct = stripeProducts.data.find((p) => p.name === "Bisi");
     if (!stripeProduct) {

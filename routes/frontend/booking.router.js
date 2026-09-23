@@ -49,6 +49,6 @@ router.get("/recent-providers", authMiddleware, bookingController.getRecentProvi
 router.get("/appointment-history", authMiddleware, bookingController.getAppointmentHistory);
 router.get("/provider-search", authMiddleware, bookingController.getProviderBySearch);
 router.post("/makeBookingPayment", authMiddleware, bookingController.makeBookingPayment);
-
+router.put("/updatePaymentStatus/:id", authMiddleware, bookingController.updatePaymentStatus);
 
 module.exports = router;
