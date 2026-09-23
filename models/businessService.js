@@ -15,7 +15,7 @@ var businessServiceSchema = new Schema(
         productName: { type: String },
         price: { type: String },
         inStock: { type: String },
-        servicesUsedIn: { type: String },
+        servicesUsedIn: [{ type: Schema.Types.ObjectId, ref: "businessService" }],
         estUses: { type: String },
       },
     ],
