@@ -1115,6 +1115,7 @@ const bookingFilter = async (req, res) => {
           },
           name: 1,
           email: 1,
+          phoneNumber: 1,
           service: 1,
           paymentType: 1,
           startDateTime: 1,
@@ -1128,6 +1129,7 @@ const bookingFilter = async (req, res) => {
           eventColor: 1,
           userId: 1,
           bookingStatus: 1,
+          servicePrice: 1,
         },
       },
       {
@@ -1139,7 +1141,7 @@ const bookingFilter = async (req, res) => {
         },
       },
     ];
-
+    
     if (query.length > 0) {
       aggregrationQuery = [
         ...aggregrationQuery,
@@ -1881,6 +1883,7 @@ const searchAppointmentDateandName = async (req, res) => {
           },
           name: 1,
           email: 1,
+          phoneNumber: 1,
           service: 1,
           paymentType: 1,
           startDateTime: 1,
