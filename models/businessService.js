@@ -10,6 +10,15 @@ var businessServiceSchema = new Schema(
       hours: { type: Number, default: 0 },
       minutes: { type: Number, default: 0 },
     },
+    inventory: [
+      {
+        productName: { type: String },
+        price: { type: String },
+        inStock: { type: String },
+        servicesUsedIn: { type: String },
+        estUses: { type: String },
+      },
+    ],
     isDeleted: { type: Boolean, default: false },
     addedBy: { type: Schema.Types.ObjectId, ref: "User" },
     role: { type: Number },
