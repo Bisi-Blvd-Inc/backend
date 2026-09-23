@@ -9,6 +9,19 @@ const { authMiddleware } = require("../../middlewares/frontend/authMiddleware");
 // Load Google credentials
 const CREDENTIALS_PATH = process.env.GOOGLE_CREDENTIALS_PATH;
 
+// db is null when config/firebase.js couldn't load its service account key
+// (see that file) — fail these routes individually instead of the whole
+// server refusing to start.
+router.use((req, res, next) => {
+  if (!db) {
+    return res.status(503).json({
+      success: false,
+      message: "Google Calendar integration is not configured on this server",
+    });
+  }
+  next();
+});
+
 
 // Helper: Load OAuth2 client
 function loadOAuthClient() {
