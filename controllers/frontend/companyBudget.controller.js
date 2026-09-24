@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const { pick } = require("lodash");
 const businessSchema = require("../../models/businessService");
 const personalBudgetCollection = require("../../models/personalBudget");
+const { isBudgetComplete } = require("../../helpers/budgetCompleteness");
 const _ = require("lodash");
 
 const comapny_budget = async (req, res) => {
@@ -303,7 +304,9 @@ const getProfitComparison = async (req, res) => {
         : Number(savedProfit);
     if (!Number.isFinite(plannedProfit)) {
       const personalBudget = await personalBudgetCollection.findOne({ addedBy });
-      const annualExpenses = Number(personalBudget?.summaryObject?.netYearly) || 0;
+      const annualExpenses = isBudgetComplete(personalBudget)
+        ? Number(personalBudget?.summaryObject?.netYearly) || 0
+        : 0;
       plannedProfit = Math.max(0, (Number(companyBudget.revenueEarn) || 0) - annualExpenses);
     }
 
