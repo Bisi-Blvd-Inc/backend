@@ -1,5 +1,6 @@
 const PersonalBudgetModal = require("../../models/personalBudget");
 const personalService = require("../../services/prsonalBudget.service");
+const { isBudgetComplete } = require("../../helpers/budgetCompleteness");
 const { pick } = require("lodash");
 
 const _ = require("lodash");
@@ -110,6 +111,18 @@ const savePersonalBudget = async (req, res) => {
       summaryObject,
     } = req.body;
     let addedBy = req._user;
+
+    // Totals may only be stored once every category is fully answered
+    // (0 counts, blank doesn't). The wizard enforces this too; this keeps
+    // the numbers trustworthy even if a client skips the check.
+    if (summaryObject && !isBudgetComplete(req.body)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Every budget step must be completed (enter 0 where an amount doesn't apply) before totals can be saved.",
+      });
+    }
+
     const prsonal_budget = {
       income,
       housing,
@@ -150,6 +163,7 @@ const getPersonalBudget = async (req, res) => {
     return res.status(200).json({
       success: true,
       personalBudget,
+      budgetComplete: isBudgetComplete(personalBudget),
       message: "Personal Budget success",
     });
   } catch (error) {
@@ -168,6 +182,7 @@ const getPersonal =  async (req, res) => {
     return res.status(200).json({
       success: true,
       personalBudget,
+      budgetComplete: isBudgetComplete(personalBudget),
       message: "Personal Budget success",
     });
   } catch (error) {
