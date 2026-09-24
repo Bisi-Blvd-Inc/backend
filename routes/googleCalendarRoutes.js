@@ -47,7 +47,10 @@ function loadOAuthClient() {
   return new google.auth.OAuth2(
     client_id,
     client_secret,
-    redirect_uris[0]
+    // Staging and production each have their own callback address in the
+    // credentials file; pick the right one per environment instead of
+    // assuming the first entry.
+    process.env.GOOGLE_REDIRECT_URI || redirect_uris[0]
   );
 }
 // Helper: Authorize client with saved token
