@@ -70,11 +70,15 @@ jobs:
 
     - name: Deploy Backend to Server
       uses: appleboy/ssh-action@v1.0.0
+      env:
+        FIREBASE_KEY_B64: ${{ secrets.FIREBASE_KEY_B64 }}
+        GOOGLE_OAUTH_B64: ${{ secrets.GOOGLE_OAUTH_B64 }}
       with:
         host: ${{ vars.HOST }}
         username: ${{ vars.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         port: ${{ vars.PORT }}
+        envs: FIREBASE_KEY_B64,GOOGLE_OAUTH_B64
         script: |
           echo "Starting backend deployment to ${{ inputs.environment }}..."
 
@@ -85,6 +89,26 @@ jobs:
           echo "Extracting pre-built deployment..."
           tar -xzf /tmp/deployment.tar.gz -C .
           rm /tmp/deployment.tar.gz
+
+          # Secret files (Google Calendar integration) come from GitHub
+          # environment secrets as base64, so they never pass through a
+          # terminal or the repo. Skipped when a secret isn't set.
+          if [ -n "$FIREBASE_KEY_B64" ]; then
+            echo "$FIREBASE_KEY_B64" | base64 -d > config/serviceAccountKey.json
+            chmod 600 config/serviceAccountKey.json
+            echo "Wrote config/serviceAccountKey.json"
+          fi
+          if [ -n "$GOOGLE_OAUTH_B64" ]; then
+            CRED_PATH=$(grep -E '^GOOGLE_CREDENTIALS_PATH=' .env | head -1 | cut -d= -f2- | tr -d '\r"')
+            if [ -n "$CRED_PATH" ]; then
+              mkdir -p "$(dirname "$CRED_PATH")"
+              echo "$GOOGLE_OAUTH_B64" | base64 -d > "$CRED_PATH"
+              chmod 600 "$CRED_PATH"
+              echo "Wrote Google OAuth credentials file"
+            else
+              echo "GOOGLE_OAUTH_B64 is set but GOOGLE_CREDENTIALS_PATH is missing from ENV_FILE - skipped"
+            fi
+          fi
 
           # Stop existing PM2 processes
           pm2 delete all
