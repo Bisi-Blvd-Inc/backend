@@ -6,6 +6,7 @@ const bookingService = require("../../services/booking.service");
 const mongoose = require("mongoose");
 const { pick } = require("lodash");
 const businessSchema = require("../../models/businessService");
+const personalBudgetCollection = require("../../models/personalBudget");
 const _ = require("lodash");
 
 const comapny_budget = async (req, res) => {
@@ -272,26 +273,39 @@ const getGoalById = async (req, res) => {
 };
 
 
-// Booked services (real bookings) vs. planned profit (the subscriber's own
-// revenue goal from the Goals page, stored as accurateGoals.monthlyGoals).
-// `month` is "YYYY-MM"; defaults to the current month if omitted.
+// Booked services (real bookings) vs. planned profit — the annual take-home
+// profit the subscriber entered on the Goals page ("What profit do you want
+// to take home…"), compared against the same calendar year's bookings.
+// `year` is "YYYY"; defaults to the current year if omitted.
 const getProfitComparison = async (req, res) => {
   try {
     const addedBy = req._user;
-    const monthParam = req.query.month;
-
-    const now = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
-    if (isNaN(now.getTime())) {
+    const year = req.query.year ? Number(req.query.year) : new Date().getFullYear();
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
       return res.status(400).json({
         success: false,
-        message: "Invalid month — expected format YYYY-MM",
+        message: "Invalid year — expected format YYYY",
       });
     }
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year + 1, 0, 1);
 
     const goalsBudget = await company_budgets.findOne({ addedBy });
-    const plannedProfit = goalsBudget?.accurateGoals?.monthlyGoals || 0;
+    const companyBudget = goalsBudget?.companyBudget || {};
+
+    // desiredProfit is saved with the goal from now on. Accounts saved
+    // before that only stored revenueEarn (= desired profit + annual
+    // expenses), so back out the expenses to recover the same figure.
+    const savedProfit = companyBudget.desiredProfit;
+    let plannedProfit =
+      savedProfit === undefined || savedProfit === null || savedProfit === ""
+        ? NaN
+        : Number(savedProfit);
+    if (!Number.isFinite(plannedProfit)) {
+      const personalBudget = await personalBudgetCollection.findOne({ addedBy });
+      const annualExpenses = Number(personalBudget?.summaryObject?.netYearly) || 0;
+      plannedProfit = Math.max(0, (Number(companyBudget.revenueEarn) || 0) - annualExpenses);
+    }
 
     const { actualRevenue, completedCount, bookedNotYetCompleted, pendingCount } =
       await bookingService.getRevenueSummary(addedBy, startDate, endDate);
@@ -300,7 +314,7 @@ const getProfitComparison = async (req, res) => {
       success: true,
       message: "Profit comparison fetched successfully",
       data: {
-        month: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}`,
+        year,
         plannedProfit,
         actualRevenue,
         completedCount,
