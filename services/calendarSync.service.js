@@ -169,9 +169,13 @@ const syncBookingInBackground = (bookingId) => {
 const removeEventInBackground = (info) => {
   if (!process.env.GOOGLE_CREDENTIALS_PATH) return;
   setImmediate(() => {
-    removeEventForDeletedBooking(info).catch((err) =>
-      console.error("Google Calendar event removal failed:", err.message)
-    );
+    removeEventForDeletedBooking(info)
+      .then((result) =>
+        console.log(`Google Calendar event ${info.googleEventId} for deleted booking: ${result}`)
+      )
+      .catch((err) =>
+        console.error("Google Calendar event removal failed:", err.message)
+      );
   });
 };
 
