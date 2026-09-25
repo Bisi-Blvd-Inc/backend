@@ -70,21 +70,56 @@ jobs:
 
     - name: Deploy Backend to Server
       uses: appleboy/ssh-action@v1.0.0
+      env:
+        FIREBASE_KEY_B64: ${{ secrets.FIREBASE_KEY_B64 }}
+        GOOGLE_OAUTH_B64: ${{ secrets.GOOGLE_OAUTH_B64 }}
       with:
         host: ${{ vars.HOST }}
         username: ${{ vars.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         port: ${{ vars.PORT }}
+        envs: FIREBASE_KEY_B64,GOOGLE_OAUTH_B64
         script: |
           echo "Starting backend deployment to ${{ inputs.environment }}..."
 
           # Navigate to backend directory
           cd ${{ vars.PATH }}
 
-          # Extract the pre-built deployment
+          # Extract the pre-built deployment. node_modules is removed first:
+          # extracting over the old tree leaves stale nested packages behind
+          # (e.g. an old ESM-only node-fetch under google-gax after a
+          # dependency downgrade), which then shadow the correct versions.
           echo "Extracting pre-built deployment..."
+          rm -rf node_modules
           tar -xzf /tmp/deployment.tar.gz -C .
           rm /tmp/deployment.tar.gz
+
+          # Secret files (Google Calendar integration) come from GitHub
+          # environment secrets as base64, so they never pass through a
+          # terminal or the repo. Skipped when a secret isn't set, and a
+          # secret that decodes to nothing never overwrites a working file.
+          write_secret_file() {
+            secret_b64="$1"; dest="$2"; label="$3"
+            [ -n "$secret_b64" ] || return 0
+            tmp=$(mktemp)
+            printf '%s' "$secret_b64" | tr -d ' \r\n' | base64 -d > "$tmp" 2>/dev/null
+            if [ -s "$tmp" ]; then
+              mkdir -p "$(dirname "$dest")"
+              mv "$tmp" "$dest"
+              chmod 600 "$dest"
+              echo "Wrote $label ($(wc -c < "$dest" | tr -d ' ') bytes)"
+            else
+              rm -f "$tmp"
+              echo "WARNING: $label secret decoded to nothing - left any existing file untouched"
+            fi
+          }
+          write_secret_file "$FIREBASE_KEY_B64" "config/serviceAccountKey.json" "Firebase service account key"
+          CRED_PATH=$(grep -E '^GOOGLE_CREDENTIALS_PATH=' .env | head -1 | cut -d= -f2- | tr -d '\r"')
+          if [ -n "$CRED_PATH" ]; then
+            write_secret_file "$GOOGLE_OAUTH_B64" "$CRED_PATH" "Google OAuth credentials file"
+          elif [ -n "$GOOGLE_OAUTH_B64" ]; then
+            echo "GOOGLE_OAUTH_B64 is set but GOOGLE_CREDENTIALS_PATH is missing from ENV_FILE - skipped"
+          fi
 
           # Stop existing PM2 processes
           pm2 delete all

@@ -2,12 +2,15 @@ const express = require("express");
 const router = express.Router();
 const { google } = require("googleapis");
 const db = require("../config/firebase");
-const path = require("path");
-const fs = require("fs");
 const { authMiddleware } = require("../middlewares/frontend/authMiddleware");
+const {
+  loadOAuthClient,
+  signState,
+  verifyState,
+  saveConnection,
+  getAuthorizedClient,
+} = require("../services/googleCalendar.service");
 
-// Load Google credentials
-const CREDENTIALS_PATH = process.env.GOOGLE_CREDENTIALS_PATH;
 
 // db is null when config/firebase.js couldn't load its service account key
 // (see that file) — fail these routes individually instead of the whole
@@ -23,70 +26,13 @@ router.use((req, res, next) => {
 });
 
 
-// Helper: Load OAuth2 client
-function loadOAuthClient() {
-  const credentials = JSON.parse(
-    fs.readFileSync(CREDENTIALS_PATH, "utf8")
-  );
-
-  const oauthConfig =
-    credentials.web || credentials.installed;
-
-  if (!oauthConfig) {
-    throw new Error(
-      "Invalid credentials.json. Missing web or installed section."
-    );
-  }
-
-  const {
-    client_id,
-    client_secret,
-    redirect_uris,
-  } = oauthConfig;
-
-  return new google.auth.OAuth2(
-    client_id,
-    client_secret,
-    redirect_uris[0]
-  );
-}
-// Helper: Authorize client with saved token
-/*
-async function authorize() {
-  const oAuth2Client = loadOAuthClient();
-
-  if (fs.existsSync(TOKEN_PATH)) {
-    const token = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
-    oAuth2Client.setCredentials(token);
-    return oAuth2Client;
-  }
-
-  throw new Error("Google Calendar token.json not found. Please authenticate.");
-}
-*/
-
+// Helper: authorized Google client for a subscriber (throws if not connected)
 async function authorize(userId) {
-  const oAuth2Client = loadOAuthClient();
-
-  const doc = await db
-    .collection("users")
-    .doc(userId)
-    .collection("calendarConnection")
-    .doc("google")
-    .get();
-
-  if (!doc.exists) {
+  const auth = await getAuthorizedClient(userId);
+  if (!auth) {
     throw new Error("Google Calendar not connected.");
   }
-
-  const token = doc.data();
-
-  oAuth2Client.setCredentials({
-    access_token: token.access_token,
-    refresh_token: token.refresh_token,
-  });
-
-  return oAuth2Client;
+  return auth;
 }
 
 // ---------------------------
@@ -101,8 +47,8 @@ router.get("/auth-url", authMiddleware, async (req, res) => {
     const authUrl = oAuth2Client.generateAuthUrl({
       access_type: "offline",
       prompt: "consent",
-      scope: ["https://www.googleapis.com/auth/calendar"],
-      state: userId, // Pass userId in state to identify the user in the callback
+      scope: ["https://www.googleapis.com/auth/calendar.events"],
+      state: signState(userId), // signed + short-lived; verified in the callback
     });
 
     res.json({ url: authUrl });
@@ -117,28 +63,30 @@ router.get("/auth-url", authMiddleware, async (req, res) => {
 // ---------------------------
 router.get("/oauth2callback", async (req, res) => {
   try {
-    const userId = req.query.state; // Retrieve userId from state parameter
+    let userId;
+    try {
+      userId = verifyState(req.query.state);
+    } catch (stateErr) {
+      return res.status(400).json({
+        error: "This connection link is invalid or has expired. Please start again from the Calendar page.",
+      });
+    }
     const oAuth2Client = loadOAuthClient();
     const code = req.query.code;
     if (!code) {
       return res.status(400).json({
         error: "Authorization code missing",
-    }); 
-  }
+      });
+    }
 
     const { tokens } = await oAuth2Client.getToken(code);
-    oAuth2Client.setCredentials(tokens);
+    await saveConnection(userId, { ...tokens, connected_at: undefined });
     await db
       .collection("users")
-      .doc(userId)
+      .doc(String(userId))
       .collection("calendarConnection")
       .doc("google")
-      .set({
-        access_token: tokens.access_token || "",
-        refresh_token: tokens.refresh_token || "",
-        connected_at: new Date(),
-        last_synced_at: new Date(),
-      });
+      .set({ connected_at: new Date() }, { merge: true });
 
     res.send("Google Calendar connected successfully. You can close this window.");
   } catch (err) {
@@ -168,7 +116,7 @@ router.get("/events", authMiddleware, async (req, res) => {
     for (const event of events) {
     await db
         .collection("users")
-        .doc(userId)
+        .doc(String(userId))
         .collection("calendarEvents")
         .doc(event.id)
         .set({
@@ -211,7 +159,7 @@ router.post("/create", authMiddleware, async (req, res) => {
     });
     await db
       .collection("users")
-      .doc(userId)
+      .doc(String(userId))
       .collection("calendarEvents")
       .doc(response.data.id)
       .set({
@@ -253,7 +201,7 @@ router.delete("/delete/:eventId", authMiddleware, async (req, res) => {
     });
     await db
       .collection("users")
-      .doc(userId)
+      .doc(String(userId))
       .collection("calendarEvents")
       .doc(req.params.eventId)
       .delete();
@@ -274,7 +222,7 @@ router.get("/status", authMiddleware, async (req, res) => {
 
     const doc = await db
       .collection("users")
-      .doc(userId)
+      .doc(String(userId))
       .collection("calendarConnection")
       .doc("google")
       .get();
