@@ -48,7 +48,7 @@ const syncBooking = async (bookingId, deps = {}) => {
   if (!booking || !booking.userId) return "skipped";
 
   const auth = await getAuthorizedClient(booking.userId);
-  if (!auth) return "not-connected";
+  if (!auth) return `not-connected (owner ${booking.userId})`;
   const calendar = makeCalendar(auth);
 
   const cancelled = booking.isDeleted || booking.bookingStatus === "Cancelled";
@@ -128,9 +128,9 @@ const syncBookingInBackground = (bookingId) => {
   setImmediate(() => {
     syncBooking(bookingId)
       .then((result) => {
-        if (result === "not-connected") {
-          if (loggedNotConnected.has(String(bookingId))) return;
-          loggedNotConnected.add(String(bookingId));
+        if (String(result).startsWith("not-connected")) {
+          if (loggedNotConnected.has(result)) return;
+          loggedNotConnected.add(result);
         }
         console.log(`Google Calendar sync for booking ${bookingId}: ${result}`);
       })
