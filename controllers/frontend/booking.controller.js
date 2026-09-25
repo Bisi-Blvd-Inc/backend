@@ -1482,32 +1482,33 @@ const bookingDelete = async (req, res) => {
 
     const response = await bookingCollection.deleteOne({ _id: id });
     if (exist) {
+      // Bookings store their owner as userId (there is no addedBy field).
       const schedule = await calenderSettingService.find({
-        addedBy: exist.addedBy,
+        addedBy: exist.userId,
       });
       const deleteNotification = await notificationCollection.deleteOne({
         bookingId: id,
       });
 
-      const obj = {
-        startDate: startDate,
-        startTime: startTime,
-        endTime: endTime,
-      };
-      const index = schedule.scheduledData.findIndex(
-        (slot) => slot.startTime > obj.startTime
-      );
-      if (index === -1) {
-        schedule.scheduledData.push(obj);
-      } else {
-        schedule.scheduledData.splice(index, 0, obj);
-      }
-      const Id = schedule?._id;
-      const newObj = {
-        scheduledData: schedule.scheduledData,
-      };
-      if (exist?.scheduleexist == true) {
-        let calenderSetting = await calenderSettingService.update(Id, newObj);
+      if (schedule && exist?.scheduleexist == true) {
+        const obj = {
+          startDate: startDate,
+          startTime: startTime,
+          endTime: endTime,
+        };
+        const index = schedule.scheduledData.findIndex(
+          (slot) => slot.startTime > obj.startTime
+        );
+        if (index === -1) {
+          schedule.scheduledData.push(obj);
+        } else {
+          schedule.scheduledData.splice(index, 0, obj);
+        }
+        const Id = schedule?._id;
+        const newObj = {
+          scheduledData: schedule.scheduledData,
+        };
+        await calenderSettingService.update(Id, newObj);
       }
       return res.status(200).json({
         success: true,
