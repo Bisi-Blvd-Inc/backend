@@ -131,6 +131,32 @@ BookingSchema.post("deleteOne", { document: false, query: true }, function () {
   }
 });
 
+// Bulk delete (checkbox -> remove) goes through deleteMany, which the
+// deleteOne hooks above don't cover.
+BookingSchema.pre("deleteMany", { document: false, query: true }, async function () {
+  try {
+    const existing = await this.model
+      .find(this.getFilter())
+      .select("userId googleEventId")
+      .lean();
+    this._calendarEventsToRemove = existing
+      .filter((b) => b.googleEventId)
+      .map((b) => ({ userId: b.userId, googleEventId: b.googleEventId }));
+  } catch (err) {
+    this._calendarEventsToRemove = [];
+  }
+});
+
+BookingSchema.post("deleteMany", { document: false, query: true }, function () {
+  try {
+    (this._calendarEventsToRemove || []).forEach((info) =>
+      calendarSync().removeEventInBackground(info)
+    );
+  } catch (err) {
+    console.error("Calendar sync hook (deleteMany) failed:", err.message);
+  }
+});
+
 var Booking = mongoose.model("Booking", BookingSchema);
 
 module.exports = Booking;
