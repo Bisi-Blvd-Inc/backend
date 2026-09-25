@@ -1,8 +1,36 @@
 const { google } = require("googleapis");
+const moment = require("moment");
 
 const CALENDAR_ID = "primary";
 
 const isGone = (err) => err && (err.code === 404 || err.code === 410);
+
+// A booking's real start time lives in `startDateTime`, a string written by
+// the web app like "Fri Sep 25 2026 11:00:AM:00 GMT-0500 (CDT)". `startDate`
+// is only the calendar day (saved as midnight UTC), so using it alone shifts
+// the event by the owner's UTC offset — an 11:00am booking landed at 7pm the
+// day before. `endDateTime` is saved equal to the start, so the end comes from
+// the services' durations (default 1 hour).
+const STAMP_FORMATS = ["ddd MMM DD YYYY hh:mm:A:ss [GMT]ZZ", "ddd MMM D YYYY hh:mm:A ZZ"];
+
+const parseStamp = (value) => {
+  if (!value) return null;
+  for (const format of STAMP_FORMATS) {
+    const parsed = moment(String(value), format);
+    if (parsed.isValid()) return parsed.toDate();
+  }
+  const fallback = new Date(value);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
+const getBookingTimes = (booking) => {
+  const start = parseStamp(booking.startDateTime) || new Date(booking.startDate);
+  const minutes = (booking.service || []).reduce((total, s) => {
+    const time = (s && s.serviceTime) || {};
+    return total + (Number(time.hours) || 0) * 60 + (Number(time.minutes) || 0);
+  }, 0);
+  return { start, end: new Date(start.getTime() + (minutes || 60) * 60 * 1000) };
+};
 
 const buildEvent = (booking) => {
   const serviceNames =
@@ -11,11 +39,7 @@ const buildEvent = (booking) => {
       .filter(Boolean)
       .join(", ") || "Appointment";
   const client = booking.benificialName || booking.name || "Client";
-  const start = new Date(booking.startDate);
-  const end =
-    booking.endDate && new Date(booking.endDate) > start
-      ? new Date(booking.endDate)
-      : new Date(start.getTime() + 60 * 60 * 1000);
+  const { start, end } = getBookingTimes(booking);
 
   const lines = [`Client: ${client}`];
   const email = booking.benificialEmail || booking.email;
@@ -68,7 +92,7 @@ const syncBooking = async (bookingId, deps = {}) => {
     return "skipped";
   }
 
-  if (!booking.startDate) return "skipped";
+  if (!booking.startDateTime && !booking.startDate) return "skipped";
   const requestBody = buildEvent(booking);
 
   if (booking.googleEventId) {
@@ -150,6 +174,7 @@ const removeEventInBackground = (info) => {
 };
 
 module.exports = {
+  getBookingTimes,
   buildEvent,
   syncBooking,
   removeEventForDeletedBooking,
