@@ -116,12 +116,27 @@ const removeEventForDeletedBooking = async ({ userId, googleEventId }, deps = {}
 
 // Fire-and-forget wrappers used by the booking model hooks: a calendar
 // problem must never fail or slow down saving a booking.
+// Owners with no connected calendar are the norm, so that outcome is logged
+// once per owner per process instead of on every booking.
+const loggedNotConnected = new Set();
+
 const syncBookingInBackground = (bookingId) => {
-  if (!process.env.GOOGLE_CREDENTIALS_PATH) return;
+  if (!process.env.GOOGLE_CREDENTIALS_PATH) {
+    console.warn("Google Calendar sync skipped: GOOGLE_CREDENTIALS_PATH is not set");
+    return;
+  }
   setImmediate(() => {
-    syncBooking(bookingId).catch((err) =>
-      console.error(`Google Calendar sync failed for booking ${bookingId}:`, err.message)
-    );
+    syncBooking(bookingId)
+      .then((result) => {
+        if (result === "not-connected") {
+          if (loggedNotConnected.has(String(bookingId))) return;
+          loggedNotConnected.add(String(bookingId));
+        }
+        console.log(`Google Calendar sync for booking ${bookingId}: ${result}`);
+      })
+      .catch((err) =>
+        console.error(`Google Calendar sync failed for booking ${bookingId}:`, err.message)
+      );
   });
 };
 
