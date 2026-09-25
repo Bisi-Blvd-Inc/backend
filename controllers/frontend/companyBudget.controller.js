@@ -8,6 +8,8 @@ const { pick } = require("lodash");
 const businessSchema = require("../../models/businessService");
 const personalBudgetCollection = require("../../models/personalBudget");
 const { isBudgetComplete } = require("../../helpers/budgetCompleteness");
+const serviceSettingCollection = require("../../models/serviceSetting");
+const { syncGoalServicesToBookingSettings } = require("../../helpers/goalServiceSync");
 const _ = require("lodash");
 
 const comapny_budget = async (req, res) => {
@@ -51,6 +53,15 @@ const saveGoalsBudget = async (req, res) => {
     } else {
       await company_budgets.create(Goals_budget);
     }
+
+    // Make services checked on Goals available for booking too. A problem
+    // here must never fail saving the goals themselves.
+    try {
+      await syncGoalServicesToBookingSettings(addedBy, service, serviceSettingCollection);
+    } catch (syncErr) {
+      console.error("Could not sync Goals services to booking settings:", syncErr.message);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Calculated successfully",
