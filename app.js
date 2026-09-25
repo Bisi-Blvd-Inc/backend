@@ -11,8 +11,6 @@ const { smtpSms } = require("./helpers/twilio");
 const moment = require("moment");
 const stripe = require("stripe")(process.env.STRIPE_SK_KEY);
 const googleCalendarRoutes = require("./routes/googleCalendarRoutes");
-const bankController = require("./controllers/frontend/bank.controller");
-const bankSyncService = require("./services/bankSync.service");
 
 const port = process.env.PORT || 3001;
 
@@ -111,13 +109,6 @@ cron.schedule("* * * * *", () => {
   checkAllUsersWithDeactivate();
 });
 
-// Sweeps connected bank accounts for new transactions. Most updates arrive
-// via the Plaid webhook (which just flags needsSync for a fast re-sweep),
-// this is the fallback/regular cadence in case a webhook is missed.
-cron.schedule("0 * * * *", () => {
-  bankSyncService.runScheduledSync();
-});
-
 // Run the task every 5 minutes
 // cron.schedule("0 0 * * *", () => {
 //   checkAndDeleteEntries();
@@ -155,21 +146,6 @@ cron.schedule("0 0 * * *", async function () {
 app.use(cors());
 app.options("*", cors());
 app.use(logger("dev"));
-
-// Registered before express.json() below, on purpose: Plaid signs this
-// webhook over the exact raw request bytes, so the body has to reach the
-// handler unparsed. If this were declared after (or inside) the routes
-// that sit behind express.json(), the global parser would have already
-// consumed the stream and the raw bytes needed for signature verification
-// would be gone. This is also why it's not in routes/frontend/bank.router.js
-// alongside the authenticated bank endpoints — Plaid calls it server-to-
-// server with no user JWT, so it can't sit behind authMiddleware either.
-app.post(
-  "/frontend/bank/webhook",
-  express.raw({ type: "application/json" }),
-  bankController.handleWebhook
-);
-
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.set("view engine", "ejs");
