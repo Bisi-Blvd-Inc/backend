@@ -91,6 +91,21 @@ folder of its own to check against these features.
 - If the Personal Budget is incomplete, Goals ignores budget expenses, shows a
   banner linking to the budget, and blocks Calculate. **Staging.**
 
+### 2.2b Services checked on Goals now appear everywhere (Staging)
+- The calendar, bookings, and Settings → Booking Service all read the
+  `serviceSetting` list (`GET /frontend/serviceSetting/get`), not the goals
+  record. Services checked on My Goals used to stay invisible to booking until
+  selected again in Settings.
+- **Now:** saving Goals (`POST /frontend/company/saveBudget`) adds every checked
+  service to `serviceSetting` with the Goals price and time. Only adds missing
+  entries; never overwrites (Settings price changes are safe) or removes.
+- **Mobile:** the app saves goals through the same endpoint, so it benefits
+  automatically **if its goal rows send `checked`, `serviceCharge`,
+  `serviceHours`, `serviceMinute`** — verify the app's `BudgetGoal.service`
+  model carries these. Also a one-time backfill exists for accounts that
+  saved goals earlier: `scripts/syncGoalServicesToBooking.js` (dry run by
+  default, `--apply` to write).
+
 ### 2.3 Booked Services vs. Planned Profit (Prod)
 - `GET /frontend/company/profit-comparison?year=YYYY` → `{ year,
   plannedProfit, actualRevenue, completedCount, bookedNotYetCompleted,
