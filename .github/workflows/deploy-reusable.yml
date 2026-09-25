@@ -85,8 +85,12 @@ jobs:
           # Navigate to backend directory
           cd ${{ vars.PATH }}
 
-          # Extract the pre-built deployment
+          # Extract the pre-built deployment. node_modules is removed first:
+          # extracting over the old tree leaves stale nested packages behind
+          # (e.g. an old ESM-only node-fetch under google-gax after a
+          # dependency downgrade), which then shadow the correct versions.
           echo "Extracting pre-built deployment..."
+          rm -rf node_modules
           tar -xzf /tmp/deployment.tar.gz -C .
           rm /tmp/deployment.tar.gz
 
