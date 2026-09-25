@@ -27,11 +27,18 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies and build
+      env:
+        # Passed through the environment (not pasted into the script text):
+        # values containing $, quotes or backticks stay intact, and the
+        # contents never appear in the step's logged command. Prefers an
+        # environment secret named ENV_FILE (masked in logs) and falls back
+        # to the variable of the same name.
+        ENV_FILE_CONTENT: ${{ secrets.ENV_FILE || vars.ENV_FILE }}
       run: |
-        set -x
+        # Create .env file (carriage returns from the web editor removed)
+        printf '%s\n' "$ENV_FILE_CONTENT" | tr -d '\r' > .env
 
-        # Create .env file from variable
-        echo "${{ vars.ENV_FILE }}" > .env
+        set -x
 
         npm ci
 
