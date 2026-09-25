@@ -120,7 +120,19 @@ const createBusinessService = async (req, res) => {
       if (getService) {
         await goalsCompanyBudget.updateOne(
           { addedBy: req._user },
-          { $push: { service: createdService } }
+          {
+            // Also store the price/time under the names the Goals rows use,
+            // so the new service shows them (and is checked) right away.
+            $push: {
+              service: {
+                ...createdService.toObject(),
+                checked: true,
+                serviceCharge: String(price),
+                serviceHours: Number(hours) > 0 ? `${Number(hours)} ${Number(hours) === 1 ? "hour" : "hours"}` : "0",
+                serviceMinute: Number(minutes) > 0 ? `${Number(minutes)} minutes` : "",
+              },
+            },
+          }
         );
       }
 

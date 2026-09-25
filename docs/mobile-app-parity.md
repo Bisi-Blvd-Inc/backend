@@ -106,6 +106,25 @@ folder of its own to check against these features.
   saved goals earlier: `scripts/syncGoalServicesToBooking.js` (dry run by
   default, `--apply` to write).
 
+### 2.2c Service time and price carry everywhere (Staging)
+
+- A service added on Goals ("Add Service": name, price, hours, minutes) is
+  saved with its price and `serviceTime`, and now also appears on the Goals
+  row already **checked with the price and time filled in** (before, the row
+  came back blank and had to be re-entered). Goals rows use `serviceCharge`,
+  `serviceHours` (e.g. `"2 hours"`, `"0"`) and `serviceMinute` (`"15 minutes"`);
+  if the app lists Goals services it must fill those from `price` /
+  `serviceTime` for services that lack them.
+- The owner's own service time (`serviceSetting.service[].serviceTime`, set from
+  Goals or Settings) now sets the **length of a booking** on the calendar
+  (`GET /frontend/booking/list` and the filter endpoint return each booking's
+  `service[].serviceTime` with the owner's time applied) and the Google
+  Calendar event. Apps drawing a calendar should use `service[].serviceTime`
+  from those responses, not the shared service default.
+- Web calendar: clicking a day / time slot opens Add Booking with that date
+  (and time) prefilled (`/addbooking?date=YYYY-MM-DD&time=HH:mm`). Mobile
+  calendar should offer the same.
+
 ### 2.3 Booked Services vs. Planned Profit (Prod)
 - `GET /frontend/company/profit-comparison?year=YYYY` → `{ year,
   plannedProfit, actualRevenue, completedCount, bookedNotYetCompleted,

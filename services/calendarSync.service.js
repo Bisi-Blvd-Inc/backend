@@ -1,5 +1,6 @@
 const { google } = require("googleapis");
 const moment = require("moment");
+const { loadOwnerServiceTimes, withOwnerServiceTimes } = require("../helpers/ownerServiceTimes");
 
 const CALENDAR_ID = "primary";
 
@@ -23,23 +24,23 @@ const parseStamp = (value) => {
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 };
 
-const getBookingTimes = (booking) => {
+const getBookingTimes = (booking, services = booking.service) => {
   const start = parseStamp(booking.startDateTime) || new Date(booking.startDate);
-  const minutes = (booking.service || []).reduce((total, s) => {
+  const minutes = (services || []).reduce((total, s) => {
     const time = (s && s.serviceTime) || {};
     return total + (Number(time.hours) || 0) * 60 + (Number(time.minutes) || 0);
   }, 0);
   return { start, end: new Date(start.getTime() + (minutes || 60) * 60 * 1000) };
 };
 
-const buildEvent = (booking) => {
+const buildEvent = (booking, services = booking.service) => {
   const serviceNames =
     (booking.service || [])
       .map((s) => s && s.service)
       .filter(Boolean)
       .join(", ") || "Appointment";
   const client = booking.benificialName || booking.name || "Client";
-  const { start, end } = getBookingTimes(booking);
+  const { start, end } = getBookingTimes(booking, services);
 
   const lines = [`Client: ${client}`];
   const email = booking.benificialEmail || booking.email;
@@ -93,7 +94,8 @@ const syncBooking = async (bookingId, deps = {}) => {
   }
 
   if (!booking.startDateTime && !booking.startDate) return "skipped";
-  const requestBody = buildEvent(booking);
+  const ownerTimes = await (deps.loadOwnerServiceTimes || loadOwnerServiceTimes)(booking.userId);
+  const requestBody = buildEvent(booking, withOwnerServiceTimes(booking.service, ownerTimes));
 
   if (booking.googleEventId) {
     try {
