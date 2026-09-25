@@ -1,4 +1,5 @@
 const bookingService = require("../../services/booking.service");
+const { loadOwnerServiceTimes, withOwnerServiceTimes } = require("../../helpers/ownerServiceTimes");
 const customerCollection = require("../../services/customer.service");
 const customerService = require("../../services/customer.service");
 const bookingCollection = require("../../models/booking");
@@ -936,6 +937,14 @@ const allBookingList = async (req, res) => {
     const userId = req._user;
     const getBookingList = await bookingService.GetAllListwithLimit(userId);
 
+    // Use the owner's own service times (Goals / Settings) for booking length.
+    const ownerTimes = await loadOwnerServiceTimes(userId);
+    for (const group of getBookingList || []) {
+      for (const booking of group.data || []) {
+        booking.service = withOwnerServiceTimes(booking.service, ownerTimes);
+      }
+    }
+
     return res.status(200).json({
       code: 200,
       message: "Data fetched",
@@ -1155,6 +1164,10 @@ const bookingFilter = async (req, res) => {
     const booking = await bookingCollection.aggregate(aggregrationQuery);
     const newVar = booking.filter((val1) => {
       return val1.userId?._id == req._user;
+    });
+    const ownerTimes = await loadOwnerServiceTimes(req._user);
+    newVar.forEach((b) => {
+      b.service = withOwnerServiceTimes(b.service, ownerTimes);
     });
 
     return res.status(200).json({ code: 200, data: newVar });
