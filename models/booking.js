@@ -75,12 +75,61 @@ var BookingSchema = new Schema(
     customerId: { type: Schema.Types.ObjectId, ref: "Customer" },
     bookingFor: { type: Schema.Types.ObjectId, ref: "Customer" },
     scheduleexist: { type: Boolean, default: false },
+    googleEventId: { type: String },
   },
   {
     timestamps: { createdAt: true, updatedAt: true },
   }
 );
 BookingSchema.index({ location: "2dsphere" });
+
+// Mirror bookings to the subscriber's connected Google Calendar. Every create
+// and update in the app goes through Booking.create / findByIdAndUpdate, so
+// hooking here covers the owner's calendar and client booking links alike.
+// These run in the background and swallow their own errors — a calendar
+// problem must never fail or slow down saving a booking.
+const calendarSync = () => require("../services/calendarSync.service");
+
+BookingSchema.post("save", function (doc) {
+  try {
+    calendarSync().syncBookingInBackground(doc._id);
+  } catch (err) {
+    console.error("Calendar sync hook (save) failed:", err.message);
+  }
+});
+
+BookingSchema.post("findOneAndUpdate", function (doc) {
+  try {
+    if (doc) calendarSync().syncBookingInBackground(doc._id);
+  } catch (err) {
+    console.error("Calendar sync hook (update) failed:", err.message);
+  }
+});
+
+BookingSchema.pre("deleteOne", { document: false, query: true }, async function () {
+  try {
+    const existing = await this.model
+      .findOne(this.getFilter())
+      .select("userId googleEventId")
+      .lean();
+    this._calendarEventToRemove =
+      existing && existing.googleEventId
+        ? { userId: existing.userId, googleEventId: existing.googleEventId }
+        : null;
+  } catch (err) {
+    this._calendarEventToRemove = null;
+  }
+});
+
+BookingSchema.post("deleteOne", { document: false, query: true }, function () {
+  try {
+    if (this._calendarEventToRemove) {
+      calendarSync().removeEventInBackground(this._calendarEventToRemove);
+    }
+  } catch (err) {
+    console.error("Calendar sync hook (delete) failed:", err.message);
+  }
+});
 
 var Booking = mongoose.model("Booking", BookingSchema);
 
