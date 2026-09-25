@@ -116,7 +116,7 @@ const syncBooking = async (bookingId, deps = {}) => {
     { _id: booking._id },
     { $set: { googleEventId: created.data.id } }
   );
-  return "created";
+  return `created (event ${created.data.id})`;
 };
 
 // For a booking that was hard-deleted: the document is gone, so the event id
@@ -136,6 +136,8 @@ const removeEventForDeletedBooking = async ({ userId, googleEventId }, deps = {}
     });
   } catch (err) {
     if (!isGone(err)) throw err;
+    // Google says there is no such event on this account's calendar.
+    return "already-gone (Google reported the event not found)";
   }
   return "deleted";
 };
