@@ -1,7 +1,7 @@
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const { google } = require("googleapis");
-const db = require("../config/firebase");
+const { db } = require("../config/firebase");
 const { encryptSecret, decryptSecret } = require("../helpers/paymentCrypto");
 
 const STATE_PURPOSE = "google-calendar-connect";
