@@ -65,6 +65,15 @@ const signin = async (req, res) => {
       };
 
       let updatedUser = await authService.update(userId, { fcmToken: array });
+      // Nothing recorded actual login history before this — record it here,
+      // after credentials are confirmed valid, so a failed attempt never
+      // counts as a login.
+      authService
+        .update(userId, {
+          $set: { lastLoginAt: new Date() },
+          $inc: { loginCount: 1 },
+        })
+        .catch((err) => console.error("Could not record lastLoginAt:", err.message));
       if (user?.status == 0 && user?.HistoryActivateStatus == false) {
         returnAccountActivationMail(user?.email);
         sendReturnuser(user?.firstName, resultsArray)
