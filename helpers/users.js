@@ -47,7 +47,9 @@ const sendWrongPasswordMail = async (email) => {
             subject: `A Wrong Password Was Entered`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
@@ -319,7 +321,9 @@ const sendBookingMail = async (
               subject: `booking email`,
               html: data,
             };
-            return mail.sendMailerHtml(emailData);
+            return mail.sendMailerHtml(emailData).catch((err) =>
+              console.error(`Email to ${emailData.email} failed: ${err.message}`)
+            );
           }
         }
       );
@@ -399,7 +403,9 @@ const sendBookingMail = async (
               subject: `booking email`,
               html: data,
             };
-            return mail.sendMailerHtml(emailData);
+            return mail.sendMailerHtml(emailData).catch((err) =>
+              console.error(`Email to ${emailData.email} failed: ${err.message}`)
+            );
           }
         }
       );
@@ -455,7 +461,9 @@ const sendBookingMailExternal = async (
               subject: `booking email`,
               html: data,
             };
-            return mail.sendMailerHtml(emailData);
+            return mail.sendMailerHtml(emailData).catch((err) =>
+              console.error(`Email to ${emailData.email} failed: ${err.message}`)
+            );
           }
         }
       );
@@ -535,7 +543,9 @@ const sendBookingMailExternal = async (
               subject: `booking email`,
               html: data,
             };
-            return mail.sendMailerHtml(emailData);
+            return mail.sendMailerHtml(emailData).catch((err) =>
+              console.error(`Email to ${emailData.email} failed: ${err.message}`)
+            );
           }
         }
       );
@@ -582,7 +592,9 @@ const sendPaymentMail = async (
             subject: `payment email`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
@@ -630,7 +642,9 @@ const sendBookingMailOwner = async (
             subject: `You’ve Got Booked`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
@@ -668,7 +682,9 @@ const cancelBookingMail = async (
             subject: `booking cancel email`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
@@ -699,7 +715,9 @@ const changeScheduleMail = async (email, name) => {
             subject: `booking cancel email`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
@@ -855,7 +873,9 @@ const planAlertMail = async (email, name) => {
             subject: `Subscription expire`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
@@ -901,7 +921,9 @@ const sendProductPaymentMail = async (
             subject: `Product payment email`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
@@ -939,7 +961,9 @@ const sendProductBookingOwner = async (
             subject: `Product booking email`,
             html: data,
           };
-          return mail.sendMailerHtml(emailData);
+          return mail.sendMailerHtml(emailData).catch((err) =>
+            console.error(`Email to ${emailData.email} failed: ${err.message}`)
+          );
         }
       }
     );
