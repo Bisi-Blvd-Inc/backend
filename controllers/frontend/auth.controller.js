@@ -44,6 +44,15 @@ const signin = async (req, res) => {
           status: 403,
         });
       }
+      // isAccountDeactivated blocked the public booking link but never
+      // login itself — a deactivated owner could log straight back in
+      // and use the full dashboard. Fixed 2026-09-30.
+      if (user.isAccountDeactivated == true) {
+        return res.status(203).send({
+          message: "This account has been deactivated.",
+          status: 403,
+        });
+      }
       const token = await generateToken(user);
       if (!token) {
         return res.status(206).json({
