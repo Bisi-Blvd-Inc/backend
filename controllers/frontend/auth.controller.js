@@ -48,8 +48,12 @@ const signin = async (req, res) => {
       // login itself — a deactivated owner could log straight back in
       // and use the full dashboard. Fixed 2026-09-30.
       if (user.isAccountDeactivated == true) {
+        // Match the exact string the frontend already special-cases
+        // (login.jsx) for the isDeleted block above — a different
+        // string here would silently fall through every known-message
+        // check there and show nothing at all.
         return res.status(203).send({
-          message: "This account has been deactivated.",
+          message: "Your account is deactivated",
           status: 403,
         });
       }
