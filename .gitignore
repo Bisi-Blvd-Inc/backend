@@ -30,3 +30,8 @@ yarn-error.log*
 # Google OAuth sensitive files
 config/credentials.json
 config/token.json
+
+# Firebase service account keys (real credentials — never commit these)
+config/serviceAccountKey.json
+config/*firebase-adminsdk*.json
+/firebase.json
