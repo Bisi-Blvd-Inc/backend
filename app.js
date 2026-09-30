@@ -17,6 +17,33 @@ const bankSyncService = require("./services/bankSync.service");
 const port = process.env.PORT || 3001;
 
 
+// Cancels a user's Stripe subscription and marks them paymentStatus:0.
+// The cancel is best-effort: a subscription that's already gone
+// (Stripe's resource_missing, e.g. "No such subscription: sub_...")
+// is treated the same as a successful cancel rather than aborting —
+// previously this threw, which skipped the user's own DB update (they
+// got stuck in limbo) and, because it's inside a Promise.all, logged
+// the same error every single minute this cron runs.
+const cancelSubscriptionAndFinalize = async (user) => {
+  if (user.subscription && user.subscription.id) {
+    try {
+      await stripe.subscriptions.cancel(user.subscription.id);
+    } catch (err) {
+      if (err.code !== "resource_missing") {
+        console.error(
+          `Stripe cancel failed for user ${user._id}, subscription ${user.subscription.id}:`,
+          err.message
+        );
+      }
+    }
+  }
+  await users.findByIdAndUpdate(user._id, {
+    paymentStatus: 0,
+    subscriptionStatus: false,
+    upgradeStatus: false,
+  });
+};
+
 const checkAllUsersWithDeactivate = async () => {
   try {
     const currentTime = new Date();
@@ -38,15 +65,7 @@ const checkAllUsersWithDeactivate = async () => {
           if (currentTime >= newSubscriptionEndDate) {
             // Cancel subscription if current time is past the new subscription end date
             if (user.paymentStatus == 1) {
-
-              if (user.subscription && user.subscription.id) {
-                const subscription = await stripe.subscriptions.cancel(user.subscription.id);
-  
-                const deletedSubscription = await users.findByIdAndUpdate(
-                  user._id,
-                  { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
-                );
-              }
+              await cancelSubscriptionAndFinalize(user);
             }
           }
         } else {
@@ -62,13 +81,7 @@ const checkAllUsersWithDeactivate = async () => {
             if (currentTime >= newSubscriptionEndDate) {
               if (user.paymentStatus == 1) {
                 // Cancel subscription if current time is past the new subscription end date
-                if (user.subscription && user.subscription.id) {
-                  await stripe.subscriptions.cancel(user.subscription.id);
-                  const deletedSubscription = await users.findByIdAndUpdate(
-                    user._id,
-                    { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
-                  );
-                }
+                await cancelSubscriptionAndFinalize(user);
               }
             }
           } else {
@@ -79,13 +92,7 @@ const checkAllUsersWithDeactivate = async () => {
             if (currentTime >= deactivateDate) {
               // Cancel subscription if current time is past the deactivate date
               if (user.paymentStatus == 1) {
-                if (user.subscription && user.subscription.id) {
-                  await stripe.subscriptions.cancel(user.subscription.id);
-                  const deletedSubscription = await users.findByIdAndUpdate(
-                    user._id,
-                    { paymentStatus: 0, subscriptionStatus: false, upgradeStatus: false, subscriptionStatus: false }
-                  );
-                }
+                await cancelSubscriptionAndFinalize(user);
               }
             }
           }
