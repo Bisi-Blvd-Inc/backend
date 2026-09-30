@@ -693,14 +693,10 @@ const createExternalBooking = async (req, res) => {
     const endsWith = emailSettingData?.endsWith || "";
 
     const salonOwner = await userCollection.findById(userId);
-    // isActivateAccount really means "this account has been deactivated"
-    // (see the 30-day-grace-period cron in app.js) — reject only that case,
-    // not every normal account. This condition was inverted, so it rejected
-    // every non-deactivated owner's public booking link as "expired".
-    if (salonOwner?.isActivateAccount == true) {
+    if (salonOwner.isActivateAccount == false) {
       return res.status(400).json({
         success: true,
-        message: "This booking link is no longer active.",
+        message: "Link is Expired-isActivateAccount is true",
         status: 400,
       });
     }
@@ -2381,11 +2377,10 @@ const createMultipleProducts = async (req, res) => {
       ?.map((item) => `${item?.name}`)
       .join(", ");
     const salonOwner = await userCollection.findById(userId);
-    // Same inverted-condition fix as createExternalBooking above.
-    if (salonOwner?.isActivateAccount == true) {
+    if (salonOwner?.isActivateAccount == false) {
       return res.status(400).json({
         success: true,
-        message: "This booking link is no longer active.",
+        message: "Link is Expired",
         status: 400,
       });
     }
