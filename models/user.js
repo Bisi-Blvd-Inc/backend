@@ -63,7 +63,18 @@ var userSchema = new Schema(
     subscription: { type: Object },
     paymentMethod: { type: Object },
     paymentStatus: { type: Number, default: 0 },
+    // isActivateAccount is a separate, pre-existing flag (meaning unclear,
+    // not owned by the account-deactivation flow — see
+    // isAccountDeactivated below) that most real accounts carry as true.
+    // It used to also be written by the deactivation flow, which
+    // collided with whatever else sets it and broke public booking links
+    // for real accounts (2026-09-27/28). Left as-is; do not write to it
+    // from deactivation code.
     isActivateAccount: { type: Boolean, default: false },
+    // The actual "this account has been deactivated" flag (30-day grace
+    // period, see checkAllUsersWithDeactivate in app.js). Added
+    // 2026-09-30 to stop reusing isActivateAccount for this.
+    isAccountDeactivated: { type: Boolean, default: false },
     HistoryActivateStatus: { type: Boolean, default: true },
     DeactivateAccountDate: { type: String },
     withEnterprise: { type: Boolean, default: false },

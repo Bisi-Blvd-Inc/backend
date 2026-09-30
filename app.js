@@ -20,7 +20,9 @@ const port = process.env.PORT || 3001;
 const checkAllUsersWithDeactivate = async () => {
   try {
     const currentTime = new Date();
-    const allDeactivateAccounts = await users.find({ isActivateAccount: true });
+    // Was isActivateAccount (collided with an unrelated flag most real
+    // accounts carry as true — fixed 2026-09-30, see models/user.js).
+    const allDeactivateAccounts = await users.find({ isAccountDeactivated: true });
 
     // Loop through all deactivate accounts
     await Promise.all(
