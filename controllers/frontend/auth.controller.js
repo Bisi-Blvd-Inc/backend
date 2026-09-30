@@ -44,6 +44,19 @@ const signin = async (req, res) => {
           status: 403,
         });
       }
+      // isAccountDeactivated blocked the public booking link but never
+      // login itself — a deactivated owner could log straight back in
+      // and use the full dashboard. Fixed 2026-09-30.
+      if (user.isAccountDeactivated == true) {
+        // Match the exact string the frontend already special-cases
+        // (login.jsx) for the isDeleted block above — a different
+        // string here would silently fall through every known-message
+        // check there and show nothing at all.
+        return res.status(203).send({
+          message: "Your account is deactivated",
+          status: 403,
+        });
+      }
       const token = await generateToken(user);
       if (!token) {
         return res.status(206).json({
@@ -108,20 +121,34 @@ const signup = async (req, res) => {
       })
     );
     // Now, resultsArray contains the results for each business type
-    if (user?.HistoryActivateStatus == true && user?.status == 1 || user?.status == 1) {
+    // Any existing, non-deleted account blocks a fresh signup — the two
+    // branches below just pick the right message for *why* it exists.
+    // Previously this only caught status==1 or the deactivated
+    // (HistoryActivateStatus==false && status==0) case, so a brand-new
+    // signup who never clicked their verification email — status==0,
+    // HistoryActivateStatus still true — fell through and got a second,
+    // duplicate account on every retry. Fixed 2026-09-30.
+    if (user) {
+      if (user?.status == 0 && user?.HistoryActivateStatus == false) {
+        returnAccountActivationMail(email);
+        sendReturnuser(req?.body?.firstName, resultsArray)
+        return res.status(201).json({
+          success: true,
+          message: "You already have an account, Please verify email!",
+          data: user,
+        });
+      }
+      if (user?.status == 0 && user?.HistoryActivateStatus == true) {
+        await sendActivationMail(email);
+        return res.status(201).json({
+          success: true,
+          message: "You already have an account pending verification. We've resent your activation email.",
+          data: user,
+        });
+      }
       return res.status(403).json({
         message: "Email Already Exists",
       });
-    }
-    else if (user?.HistoryActivateStatus == false && user?.status == 0) {
-      returnAccountActivationMail(email);
-      sendReturnuser(req?.body?.firstName, resultsArray)
-      return res.status(201).json({
-        success: true,
-        message: "You already have an account, Please verify email!",
-        data: user,
-      });
-
     }
     if (password) {
       bcrypt.hash(password?.toString(), 10, async (err, hash) => {
