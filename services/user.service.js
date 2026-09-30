@@ -76,7 +76,7 @@ const getExternalUser = (id) => {
   return userCollection
     .findById(id)
     .select(
-      "businessName firstName lastName publicKey fcmToken isActivateAccount isDeleted"
+      "businessName firstName lastName publicKey fcmToken isAccountDeactivated isDeleted"
     );
 };
 
