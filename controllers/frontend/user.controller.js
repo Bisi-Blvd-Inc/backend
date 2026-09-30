@@ -693,10 +693,12 @@ const createExternalBooking = async (req, res) => {
     const endsWith = emailSettingData?.endsWith || "";
 
     const salonOwner = await userCollection.findById(userId);
-    if (salonOwner.isActivateAccount == false) {
+    // isActivateAccount is unrelated (see models/user.js) — this checks
+    // the owner's real deactivation status.
+    if (salonOwner?.isAccountDeactivated == true) {
       return res.status(400).json({
         success: true,
-        message: "Link is Expired-isActivateAccount is true",
+        message: "This booking link is no longer active.",
         status: 400,
       });
     }
@@ -2377,10 +2379,11 @@ const createMultipleProducts = async (req, res) => {
       ?.map((item) => `${item?.name}`)
       .join(", ");
     const salonOwner = await userCollection.findById(userId);
-    if (salonOwner?.isActivateAccount == false) {
+    // Same deactivation check as createExternalBooking above.
+    if (salonOwner?.isAccountDeactivated == true) {
       return res.status(400).json({
         success: true,
-        message: "Link is Expired",
+        message: "This booking link is no longer active.",
         status: 400,
       });
     }

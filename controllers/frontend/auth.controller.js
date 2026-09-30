@@ -501,7 +501,7 @@ const accountDeactivation = async (req, res) => {
     }
     const deactivationDate = new Date();
     const userDeactivate = await authService.update(id, {
-      isActivateAccount: true,
+      isAccountDeactivated: true,
       DeactivateAccountDate: deactivationDate,
     });
     const user = await accountDeactivationMail(firstname, email);
@@ -524,7 +524,11 @@ const accountActivateByClient = async (req, res) => {
   const { id } = req.params
   try {
     // const deactivationDate = new Date(); not needed here as we are activating the account
+    // Bug fixed 2026-09-30: this never actually cleared the deactivated
+    // flag, only the date — reactivating an account left it permanently
+    // marked deactivated.
     const userDeactivate = await authService.update(id, {
+      isAccountDeactivated: false,
       DeactivateAccountDate: ""
     });
     const user = await accountactivationMail(firstname, email);
