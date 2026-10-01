@@ -521,6 +521,15 @@ const userWebhook = async (req, res) => {
   // all until 2026-10-01, so this was never actually exploitable in
   // practice, but it's being fixed as the endpoint is created for real.
   const signature = req.headers["stripe-signature"];
+  // TEMPORARY — remove once signature verification is confirmed working.
+  console.log(
+    "webhook debug:",
+    "isBuffer:", Buffer.isBuffer(req.body),
+    "typeof:", typeof req.body,
+    "length:", req.body?.length,
+    "content-type:", req.headers["content-type"],
+    "has sig header:", !!signature
+  );
   let event;
   try {
     event = platformStripe.webhooks.constructEvent(
