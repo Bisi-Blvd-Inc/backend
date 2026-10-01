@@ -538,9 +538,17 @@ const userWebhook = async (req, res) => {
     const user = await userCollection.findOne({
       stripeCustomerId: customerId,
     });
-    let userSubscriptionEndDate = user?.subscriptionEndDate;
-
-    let dateFormattoString = new Date(userSubscriptionEndDate.toString());
+    // No matching user (e.g. a Stripe test event's synthetic customer id,
+    // or any other data mismatch) used to crash here — userSubscriptionEndDate
+    // was undefined and .toString() threw inside this async function with
+    // no try/catch, which Express never catches: no response was ever
+    // sent, so the request just hung until Stripe timed out waiting.
+    // Invisible until 2026-10-01 because no webhook endpoint existed to
+    // send this handler real traffic before. Acknowledge and bail instead.
+    if (!user) {
+      console.warn(`payment_intent.succeeded for unknown Stripe customer ${customerId}`);
+      return res.status(200).json({ received: true });
+    }
 
     let userId = user._id;
     let userPrice = user?.planDeatils?.price;
