@@ -641,12 +641,16 @@ const userWebhook = async (req, res) => {
   // above by payment_intent.succeeded — this intentionally doesn't repeat
   // that upgrade/BBCAN-assignment logic, to avoid double-processing the
   // same signup (Stripe fires both events for it).
-  if (event.type === "invoice.payment_succeeded") {
+  // Handles both invoice.payment_succeeded and invoice.paid — newer API
+  // versions favor invoice.paid (it wasn't even offered as an option when
+  // setting up the live-mode endpoint, 2026-10-01), older ones send
+  // invoice.payment_succeeded; both mean the same thing here.
+  if (event.type === "invoice.payment_succeeded" || event.type === "invoice.paid") {
     const customerId = event.data.object.customer;
     const subscriptionId = event.data.object.subscription;
     const user = await userCollection.findOne({ stripeCustomerId: customerId });
     if (!user) {
-      console.warn(`invoice.payment_succeeded for unknown Stripe customer ${customerId}`);
+      console.warn(`${event.type} for unknown Stripe customer ${customerId}`);
       return res.status(200).json({ received: true });
     }
     let subscriptionEndDate = user.subscriptionEndDate;
