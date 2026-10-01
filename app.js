@@ -12,6 +12,7 @@ const moment = require("moment");
 const stripe = require("stripe")(process.env.STRIPE_SK_KEY);
 const googleCalendarRoutes = require("./routes/googleCalendarRoutes");
 const bankController = require("./controllers/frontend/bank.controller");
+const userController = require("./controllers/frontend/user.controller");
 const bankSyncService = require("./services/bankSync.service");
 
 const port = process.env.PORT || 3001;
@@ -120,6 +121,40 @@ cron.schedule("* * * * *", () => {
   checkAllUsersWithDeactivate();
 });
 
+// Finishes what invoice.payment_failed started (userWebhook): once the
+// 15-day cure window closes without a successful payment, the block
+// becomes permanent (isAccountDeactivated), same terminal state a user
+// reaches by deactivating themselves. Hourly, not per-minute — a 15-day
+// deadline doesn't need minute-level precision.
+const checkAllUsersWithPaymentFailure = async () => {
+  try {
+    const now = new Date();
+    const overdue = await users.find({
+      paymentStatus: 0,
+      paymentCureDeadline: { $lte: now },
+      isAccountDeactivated: false,
+    });
+    await Promise.all(
+      overdue.map((user) =>
+        users.findByIdAndUpdate(user._id, {
+          isAccountDeactivated: true,
+          DeactivateAccountDate: now,
+        })
+      )
+    );
+    if (overdue.length > 0) {
+      console.log(
+        `Auto-deactivated ${overdue.length} account(s) past their payment cure deadline.`
+      );
+    }
+  } catch (error) {
+    console.error("Error processing payment cure deadlines:", error);
+  }
+};
+cron.schedule("0 * * * *", () => {
+  checkAllUsersWithPaymentFailure();
+});
+
 // Sweeps connected bank accounts for new transactions. Most updates arrive
 // via the Plaid webhook (which just flags needsSync for a fast re-sweep),
 // this is the fallback/regular cadence in case a webhook is missed.
@@ -177,6 +212,18 @@ app.post(
   "/frontend/bank/webhook",
   express.raw({ type: "application/json" }),
   bankController.handleWebhook
+);
+
+// Same reasoning as the Plaid webhook above: Stripe signs this over the
+// raw request bytes (see userWebhook's stripe.webhooks.constructEvent
+// call), so it has to be mounted before express.json() too. No Stripe
+// webhook endpoint existed in production at all until 2026-10-01 — this
+// also moved it out of routes/frontend/user.router.js, where it had been
+// trusting req.body with zero signature verification.
+app.post(
+  "/frontend/user/webhook",
+  express.raw({ type: "application/json" }),
+  userController.userWebhook
 );
 
 app.use(express.json({ limit: "50mb" }));

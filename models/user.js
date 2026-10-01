@@ -75,6 +75,13 @@ var userSchema = new Schema(
     // period, see checkAllUsersWithDeactivate in app.js). Added
     // 2026-09-30 to stop reusing isActivateAccount for this.
     isAccountDeactivated: { type: Boolean, default: false },
+    // Set when a renewal payment fails (Stripe invoice.payment_failed):
+    // access is blocked immediately (paymentStatus set to 0), and this is
+    // the date the 15-day cure window closes. If payment still hasn't
+    // succeeded by then, checkAllUsersWithPaymentFailure (app.js) sets
+    // isAccountDeactivated. Cleared when payment succeeds again. Added
+    // 2026-10-01 as part of the subscription-access-lifecycle work.
+    paymentCureDeadline: { type: Date },
     HistoryActivateStatus: { type: Boolean, default: true },
     DeactivateAccountDate: { type: String },
     withEnterprise: { type: Boolean, default: false },
