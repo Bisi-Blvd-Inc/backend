@@ -505,8 +505,34 @@ const deleteSubscription = async (req, res) => {
   });
 };
 
+// Bisi Books' own platform Stripe account (subscribers paying for the
+// SaaS product), not a salon owner's own account — the bare `stripe`
+// import above is used elsewhere in this file with each owner's own
+// decrypted secretKey, which would be wrong here.
+const platformStripe = stripe(process.env.STRIPE_SK_KEY);
+
 const userWebhook = async (req, res) => {
-  const event = req.body;
+  // req.body is the raw request Buffer here (see app.js — this route is
+  // mounted with express.raw() before the global json parser, on purpose:
+  // Stripe signs over the exact raw bytes). Previously this trusted
+  // whatever JSON was POSTed with zero verification — anyone who knew the
+  // URL could forge a fake payment_intent.succeeded and grant themselves
+  // a subscription. No webhook endpoint existed in Stripe's dashboard at
+  // all until 2026-10-01, so this was never actually exploitable in
+  // practice, but it's being fixed as the endpoint is created for real.
+  const signature = req.headers["stripe-signature"];
+  let event;
+  try {
+    event = platformStripe.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error("Stripe webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
   if (event.type === "payment_intent.succeeded") {
     let customerId = event.data.object.customer;
     const user = await userCollection.findOne({
@@ -577,7 +603,65 @@ const userWebhook = async (req, res) => {
         }
       }
     }
+    return res.status(200).json({ received: true });
   }
+
+  // Recurring-billing failure: block access immediately and start the
+  // 15-day cure window (Noelle's decision, 2026-09-30 — not just a
+  // warning, the booking link and dashboard actually stop working right
+  // away). checkAllUsersWithPaymentFailure (app.js) auto-deactivates the
+  // account if this isn't resolved before paymentCureDeadline.
+  if (event.type === "invoice.payment_failed") {
+    const customerId = event.data.object.customer;
+    const cureDeadline = new Date();
+    cureDeadline.setDate(cureDeadline.getDate() + 15);
+    const user = await userCollection.findOneAndUpdate(
+      { stripeCustomerId: customerId },
+      { paymentStatus: 0, paymentCureDeadline: cureDeadline }
+    );
+    if (user) {
+      console.log(`Payment failed for ${user.email} — blocked, cure window ends ${cureDeadline.toISOString()}`);
+    } else {
+      console.warn(`invoice.payment_failed for unknown Stripe customer ${customerId}`);
+    }
+    return res.status(200).json({ received: true });
+  }
+
+  // Recurring-billing success: only meaningful here as *recovery* from a
+  // prior failure (clears the block) or as a routine renewal keeping
+  // subscriptionEndDate fresh. Initial-subscription setup is handled
+  // above by payment_intent.succeeded — this intentionally doesn't repeat
+  // that upgrade/BBCAN-assignment logic, to avoid double-processing the
+  // same signup (Stripe fires both events for it).
+  if (event.type === "invoice.payment_succeeded") {
+    const customerId = event.data.object.customer;
+    const subscriptionId = event.data.object.subscription;
+    const user = await userCollection.findOne({ stripeCustomerId: customerId });
+    if (!user) {
+      console.warn(`invoice.payment_succeeded for unknown Stripe customer ${customerId}`);
+      return res.status(200).json({ received: true });
+    }
+    let subscriptionEndDate = user.subscriptionEndDate;
+    if (subscriptionId) {
+      try {
+        const subscription = await platformStripe.subscriptions.retrieve(subscriptionId);
+        subscriptionEndDate = new Date(subscription.current_period_end * 1000);
+      } catch (err) {
+        console.error(`Could not refresh subscription ${subscriptionId} for ${user.email}:`, err.message);
+      }
+    }
+    await userCollection.findByIdAndUpdate(user._id, {
+      paymentStatus: 1,
+      subscriptionStatus: true,
+      subscriptionEndDate,
+      $unset: { paymentCureDeadline: "" },
+    });
+    console.log(`Payment succeeded for ${user.email} — access restored if it was blocked`);
+    return res.status(200).json({ received: true });
+  }
+
+  // Any other event type: acknowledge receipt so Stripe doesn't retry.
+  return res.status(200).json({ received: true });
 };
 
 const encryptId = async (req, res) => {
@@ -699,6 +783,19 @@ const createExternalBooking = async (req, res) => {
       return res.status(400).json({
         success: true,
         message: "This booking link is no longer active.",
+        status: 400,
+      });
+    }
+    // paymentCureDeadline only ever gets set by userWebhook's
+    // invoice.payment_failed handler and cleared on recovery — unlike
+    // paymentStatus (default 0, historically meaningless for the ~90% of
+    // real accounts that never had Stripe data synced at all; checked
+    // 2026-10-01), its presence unambiguously means "actually in a
+    // payment-failure cure window right now."
+    if (salonOwner?.paymentCureDeadline != null) {
+      return res.status(400).json({
+        success: true,
+        message: "This booking link is temporarily unavailable.",
         status: 400,
       });
     }
@@ -2379,11 +2476,18 @@ const createMultipleProducts = async (req, res) => {
       ?.map((item) => `${item?.name}`)
       .join(", ");
     const salonOwner = await userCollection.findById(userId);
-    // Same deactivation check as createExternalBooking above.
+    // Same checks as createExternalBooking above.
     if (salonOwner?.isAccountDeactivated == true) {
       return res.status(400).json({
         success: true,
         message: "This booking link is no longer active.",
+        status: 400,
+      });
+    }
+    if (salonOwner?.paymentCureDeadline != null) {
+      return res.status(400).json({
+        success: true,
+        message: "This booking link is temporarily unavailable.",
         status: 400,
       });
     }

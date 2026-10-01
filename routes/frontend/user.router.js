@@ -37,7 +37,9 @@ router.get("/getUserExternal/:id", userController.getUserForExternal);
 router.get("/stripe-coupon-plans", userController.getCouponPlans);
 router.get("/stripe-list-with-coupon", userController.getProductWithCoupon);
 router.delete("/subscription-delete/:id", userController.deleteSubscription);
-router.post("/webhook", userController.userWebhook);
+// The webhook endpoint is NOT here — Stripe signs it over the raw request
+// bytes, so it has to be mounted in app.js with express.raw(), before the
+// global express.json() consumes the body. See app.js.
 router.get("/getAllUsersList", authMiddleware, userController.getAllUsersList);
 router.get("/getPaymentHistory", authMiddleware, userController.getPaymentHistory);
 router.post("/encrypt", authMiddleware, userController.encryptId);
