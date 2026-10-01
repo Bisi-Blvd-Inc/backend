@@ -200,6 +200,14 @@ folder of its own to check against these features.
 - **Stripe secret keys** encrypted at rest; the public "external user" lookup
   no longer returns them.
 - **`/frontend/bank/*`** endpoints exist on staging only.
+- **Public booking link: account deactivation now blocks it** (2026-09-30,
+  `isAccountDeactivated`), plus a **cell phone field with TCPA/10DLC SMS
+  opt-in consent** was added to the form (2026-09-30, `Staging`). No app
+  action needed for either — confirmed by reading
+  `professional/lib/src/screens/generate_link/generate_link.dart`: the app
+  only lets an owner generate/customize/copy the link, it never renders the
+  customer-facing booking form itself. Whoever receives the link always
+  opens it in a browser (the web frontend), on any platform.
 
 ---
 
