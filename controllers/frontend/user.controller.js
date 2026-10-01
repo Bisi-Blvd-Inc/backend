@@ -522,14 +522,32 @@ const userWebhook = async (req, res) => {
   // practice, but it's being fixed as the endpoint is created for real.
   const signature = req.headers["stripe-signature"];
   // TEMPORARY — remove once signature verification is confirmed working.
-  console.log(
-    "webhook debug:",
-    "isBuffer:", Buffer.isBuffer(req.body),
-    "typeof:", typeof req.body,
-    "length:", req.body?.length,
-    "content-type:", req.headers["content-type"],
-    "has sig header:", !!signature
-  );
+  // Bypasses the stripe library entirely and recomputes the expected
+  // signature by hand (Stripe's own documented algorithm: HMAC-SHA256 of
+  // "<timestamp>.<raw body>" using the webhook secret), to find out
+  // whether the mismatch is in the secret/payload themselves or
+  // somewhere inside how the library is being called.
+  try {
+    const crypto = require("crypto");
+    const sigParts = Object.fromEntries(
+      signature.split(",").map((p) => p.split("="))
+    );
+    const signedPayload = `${sigParts.t}.${req.body.toString("utf8")}`;
+    const expectedSig = crypto
+      .createHmac("sha256", process.env.STRIPE_WEBHOOK_SECRET)
+      .update(signedPayload, "utf8")
+      .digest("hex");
+    console.log(
+      "webhook debug:",
+      "sig header timestamp:", sigParts.t,
+      "sig header v1 (first 12):", sigParts.v1?.slice(0, 12),
+      "manually computed (first 12):", expectedSig.slice(0, 12),
+      "match:", sigParts.v1 === expectedSig,
+      "body first 80 chars:", req.body.toString("utf8").slice(0, 80)
+    );
+  } catch (debugErr) {
+    console.error("webhook debug logging itself failed:", debugErr.message);
+  }
   let event;
   try {
     event = platformStripe.webhooks.constructEvent(
