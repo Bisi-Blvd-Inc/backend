@@ -11,6 +11,7 @@ const { smtpSms } = require("./helpers/twilio");
 const moment = require("moment");
 const stripe = require("stripe")(process.env.STRIPE_SK_KEY);
 const googleCalendarRoutes = require("./routes/googleCalendarRoutes");
+const userController = require("./controllers/frontend/user.controller");
 
 const port = process.env.PORT || 3001;
 
@@ -118,6 +119,40 @@ cron.schedule("* * * * *", () => {
   checkAllUsersWithDeactivate();
 });
 
+// Finishes what invoice.payment_failed started (userWebhook): once the
+// 15-day cure window closes without a successful payment, the block
+// becomes permanent (isAccountDeactivated), same terminal state a user
+// reaches by deactivating themselves. Hourly, not per-minute — a 15-day
+// deadline doesn't need minute-level precision.
+const checkAllUsersWithPaymentFailure = async () => {
+  try {
+    const now = new Date();
+    const overdue = await users.find({
+      paymentStatus: 0,
+      paymentCureDeadline: { $lte: now },
+      isAccountDeactivated: false,
+    });
+    await Promise.all(
+      overdue.map((user) =>
+        users.findByIdAndUpdate(user._id, {
+          isAccountDeactivated: true,
+          DeactivateAccountDate: now,
+        })
+      )
+    );
+    if (overdue.length > 0) {
+      console.log(
+        `Auto-deactivated ${overdue.length} account(s) past their payment cure deadline.`
+      );
+    }
+  } catch (error) {
+    console.error("Error processing payment cure deadlines:", error);
+  }
+};
+cron.schedule("0 * * * *", () => {
+  checkAllUsersWithPaymentFailure();
+});
+
 // Run the task every 5 minutes
 // cron.schedule("0 0 * * *", () => {
 //   checkAndDeleteEntries();
@@ -155,6 +190,24 @@ cron.schedule("0 0 * * *", async function () {
 app.use(cors());
 app.options("*", cors());
 app.use(logger("dev"));
+
+// Registered before express.json() below, on purpose: Stripe signs this
+// webhook over the exact raw request bytes (see userWebhook's
+// stripe.webhooks.constructEvent call), so the body has to reach the
+// handler unparsed. If this were declared after (or inside) the routes
+// that sit behind express.json(), the global parser would have already
+// consumed the stream and the raw bytes needed for signature verification
+// would be gone. This is also why it's not in routes/frontend/user.router.js
+// alongside the authenticated user endpoints — Stripe calls it server-to-
+// server with no user JWT, so it can't sit behind authMiddleware either.
+// No Stripe webhook endpoint existed in production at all until
+// 2026-10-01 — this used to trust req.body with zero signature verification.
+app.post(
+  "/frontend/user/webhook",
+  express.raw({ type: "application/json" }),
+  userController.userWebhook
+);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.set("view engine", "ejs");
