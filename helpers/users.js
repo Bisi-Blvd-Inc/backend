@@ -139,7 +139,7 @@ const sendstaffMail = async (email, name, staffId) => {
 const sendNewuserCreated = async (firstName, resultsArray) => {
   try {
     const emailData = {
-      email: "admin@bisiblvd.com",
+      email: "admin@getbisibooks.com",
       subject: `New Subscriber added`,
       html: `
           <p>Dear Noelle <p>
@@ -161,7 +161,7 @@ const sendNewuserCreated = async (firstName, resultsArray) => {
 const sendReturnuser = async (firstName, resultsArray) => {
   try {
     const emailData = {
-      email: "admin@bisiblvd.com",
+      email: "admin@getbisibooks.com",
       subject: `User will be back`,
       html: `
           <p>Dear Noelle <p>
@@ -202,7 +202,7 @@ const accountDeactivationMail = async (firstname, email) => {
 const accountactivationMailToOwner = async (firstname, email) => {
   try {
     const emailData = {
-      email: "admin@bisiblvd.com",
+      email: "admin@getbisibooks.com",
       subject: `Activation Customer Account`,
       html: `
           <p>Dear  Noelle<p>
@@ -239,7 +239,7 @@ const accountactivationMail = async (firstname, email) => {
 const NewPaymentactivationMail = async (firstname, Plan) => {
   try {
     const emailData = {
-      email: "admin@bisiblvd.com",
+      email: "admin@getbisibooks.com",
       subject: `New subscriber`,
       html: `
           <p>New subscriber ${firstname} Added <p>
@@ -258,7 +258,7 @@ const NewPaymentactivationMail = async (firstname, Plan) => {
 const accountDeactivationMailToOwner = async (firstname, email) => {
   try {
     const emailData = {
-      email: "admin@bisiblvd.com",
+      email: "admin@getbisibooks.com",
       subject: `Deactivation Customer Account`,
       html: `
           <p>Dear  Noelle<p>
@@ -748,7 +748,7 @@ const activateAccount = async (token) => {
           if (user.mobile) {
             const smsData = {
               to: `${countryCode}${user.mobile}`,
-              text: `Congratulations, your Bisi Blvd. Account has been activated.`,
+              text: `Congratulations, your Bisi Books Account has been activated.`,
             };
             await smtpSms(smsData);
           } else {
