@@ -186,7 +186,7 @@ cron.schedule("0 0 * * *", async function () {
       const nowUTC = new Date(now.toISOString());
       const smsData = {
         to: `${mobile}`,
-        text: `Dear ${firstName} This is a friendly reminder of your account payment due in 3 days. To complete your payment, please login to the Bisi Blvd. website or you may call the office, 312-450-0418.`,
+        text: `Dear ${firstName} This is a friendly reminder of your account payment due in 3 days. To complete your payment, please login to the Bisi Books website or you may call the office, 312-450-0418.`,
       };
       if (nowUTC >= dueDate && nowUTC <= date) {
         await users.updateOne({ email }, { oneDayMailStatus: true });
