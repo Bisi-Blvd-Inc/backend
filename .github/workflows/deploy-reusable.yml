@@ -34,9 +34,24 @@ jobs:
         # environment secret named ENV_FILE (masked in logs) and falls back
         # to the variable of the same name.
         ENV_FILE_CONTENT: ${{ secrets.ENV_FILE || vars.ENV_FILE }}
+        # Optional per-environment overrides for the outgoing email address,
+        # so it can be changed without re-pasting the whole ENV_FILE secret.
+        SMTP_FROM_EMAIL_OVERRIDE: ${{ vars.SMTP_FROM_EMAIL }}
+        MAILER_EMAIL_OVERRIDE: ${{ vars.MAILER_EMAIL }}
       run: |
         # Create .env file (carriage returns from the web editor removed)
         printf '%s\n' "$ENV_FILE_CONTENT" | tr -d '\r' > .env
+
+        # Replace one line of .env when an override is set; otherwise leave it.
+        override() {
+          if [ -n "$2" ]; then
+            grep -v "^$1=" .env > .env.tmp || true
+            printf '%s=%s\n' "$1" "$2" >> .env.tmp
+            mv .env.tmp .env
+          fi
+        }
+        override SMTP_FROM_EMAIL "$SMTP_FROM_EMAIL_OVERRIDE"
+        override MAILER_EMAIL "$MAILER_EMAIL_OVERRIDE"
 
         set -x
 
