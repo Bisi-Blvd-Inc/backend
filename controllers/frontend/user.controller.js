@@ -40,6 +40,8 @@ const userdetailNotes = require("../../models/userdetailnotes");
 const userDetailSoap = require("../../models/userdetailsoap");
 
 const userCollection = require("../../models/user");
+const { comparePassword } = require("../../helpers/helper");
+const accountDeletion = require("../../services/accountDeletion.service");
 const upgradeCollection = require("../../models/upgrade");
 const Cryptr = require("cryptr");
 const cryptr = new Cryptr("secretKey");
@@ -85,7 +87,9 @@ const createUser = async (req, res) => {
 
 const restoreHistory = async (req, res) => {
   try {
-    const { id } = req.body;
+    // Always the signed-in account: this used to trust an id from the request
+    // body, so any logged-in user could act on someone else's data.
+    const id = req._user;
     const user1 = await usersService.update(id, {
       HistoryActivateStatus: true,
     });
@@ -104,7 +108,8 @@ const restoreHistory = async (req, res) => {
 
 const deleteHistory = async (req, res) => {
   try {
-    const { id } = req.body;
+    // Always the signed-in account (see restoreHistory).
+    const id = req._user;
     const notificationResult = await notificatinCollection.deleteMany({
       bookedBy: id,
     });
@@ -171,6 +176,62 @@ const deleteHistory = async (req, res) => {
     return res
       .status(500)
       .json({ status: 500, success: false, message: error.message });
+  }
+};
+
+// Permanent self-service deletion (Apple App Store guideline 5.1.1(v)).
+// Always acts on the signed-in account (req._user), never an id from the
+// request, and asks for the password again so a stolen session can't wipe an
+// account. See services/accountDeletion.service.js for what is removed and
+// what is kept (only anonymous usage totals and legally required billing
+// records held by Stripe).
+const deleteMyAccount = async (req, res) => {
+  try {
+    const { password, reason } = req.body || {};
+    const user = await User.findById(req._user).select("password");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Account not found." });
+    }
+    if (user.password) {
+      if (typeof password !== "string" || password === "") {
+        return res.status(400).json({
+          success: false,
+          message: "Enter your password to confirm.",
+        });
+      }
+      const valid = await comparePassword(password, user.password);
+      if (!valid) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Incorrect password." });
+      }
+    }
+    const { firstName, email } = await accountDeletion.deleteAccount(
+      req._user,
+      { reasonCode: reason }
+    );
+    try {
+      await require("../../helpers/users").accountDeletedMail(firstName, email);
+    } catch (mailErr) {
+      console.error("Account deleted, confirmation email failed:", mailErr.message);
+    }
+    return res
+      .status(200)
+      .json({ success: true, message: "Your account has been deleted." });
+  } catch (error) {
+    if (error instanceof accountDeletion.AccountDeletionError) {
+      return res
+        .status(error.status)
+        .json({ success: false, message: error.message });
+    }
+    console.error("Account deletion failed:", error);
+    return res.status(500).json({
+      success: false,
+      message:
+        "We couldn't finish deleting your account. Please try again in a moment.",
+    });
   }
 };
 
@@ -2839,6 +2900,7 @@ module.exports = {
   getCountryCode,
   restoreHistory,
   deleteHistory,
+  deleteMyAccount,
   getAllInventory,
   getSingleInventory,
   getBusinessClasses,
