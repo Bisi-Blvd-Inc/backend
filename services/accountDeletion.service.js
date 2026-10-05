@@ -60,11 +60,13 @@ class AccountDeletionError extends Error {
 
 const month = (d) => (d ? new Date(d).toISOString().slice(0, 7) : undefined);
 
-// Cancel every Stripe subscription and delete the Stripe customer. Stripe
-// keeps invoices and payment records for deleted customers, which covers the
+// Cancel every Stripe subscription and erase the Stripe customer's personal
+// details, but keep the (now anonymous) customer record and tag the cancelled
+// subscriptions, so churn history and cohorts survive in Stripe reports.
+// Stripe keeps invoices and payment records either way, which covers the
 // billing records we are legally required to retain. If this fails the whole
 // deletion stops, so nobody is charged after deleting their account.
-const closeBilling = async (user) => {
+const closeBilling = async (user, reasonCode) => {
   if (!user.stripeCustomerId && !user.subscription?.id) return;
   if (!process.env.STRIPE_SK_KEY) {
     throw new AccountDeletionError(
@@ -76,22 +78,48 @@ const closeBilling = async (user) => {
   const ignoreMissing = (err) => {
     if (err.code !== "resource_missing") throw err;
   };
+  const note = {
+    account_deleted: "true",
+    cancel_reason: reasonCode || "none",
+    canceled_at: new Date().toISOString(),
+  };
+  const cancel = async (id) => {
+    await stripe.subscriptions.update(id, { metadata: note }).catch(ignoreMissing);
+    await stripe.subscriptions.del(id).catch(ignoreMissing);
+  };
 
   if (user.stripeCustomerId) {
+    const customer = user.stripeCustomerId;
     const subs = await stripe.subscriptions
-      .list({ customer: user.stripeCustomerId, status: "all", limit: 100 })
+      .list({ customer, status: "all", limit: 100 })
       .catch((err) => {
         ignoreMissing(err);
         return { data: [] };
       });
     for (const sub of subs.data) {
-      if (sub.status !== "canceled") {
-        await stripe.subscriptions.del(sub.id).catch(ignoreMissing);
-      }
+      if (sub.status !== "canceled") await cancel(sub.id);
     }
-    await stripe.customers.del(user.stripeCustomerId).catch(ignoreMissing);
+    const cards = await stripe.paymentMethods
+      .list({ customer, type: "card", limit: 100 })
+      .catch((err) => {
+        ignoreMissing(err);
+        return { data: [] };
+      });
+    for (const card of cards.data) {
+      await stripe.paymentMethods.detach(card.id).catch(ignoreMissing);
+    }
+    await stripe.customers
+      .update(customer, {
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        description: "Deleted Bisi Books account",
+        metadata: note,
+      })
+      .catch(ignoreMissing);
   } else if (user.subscription?.id) {
-    await stripe.subscriptions.del(user.subscription.id).catch(ignoreMissing);
+    await cancel(user.subscription.id);
   }
 };
 
@@ -150,7 +178,7 @@ const deleteAccount = async (userId, { reasonCode } = {}) => {
 
   // External systems first: if any of these fail nothing local has been
   // deleted yet, so the person can simply try again.
-  await closeBilling(user);
+  await closeBilling(user, REASON_CODES.includes(reasonCode) ? reasonCode : undefined);
   const hadBankConnection = await removeBankConnections(userId);
   await googleCalendar.disconnect(userId).catch((err) => {
     console.warn("Calendar disconnect during account deletion failed:", err.message);
@@ -197,6 +225,8 @@ const deleteAccount = async (userId, { reasonCode } = {}) => {
       ? Math.round((Date.now() - new Date(user.createdAt).getTime()) / 86400000)
       : undefined,
     planName: user.planDeatils?.planName,
+    planPrice: Number(user.planDeatils?.price) || undefined,
+    cancellationType: "self_deleted",
     hadActiveSubscription: user.subscriptionStatus === true,
     hadBankConnection,
     bookingsCount,
