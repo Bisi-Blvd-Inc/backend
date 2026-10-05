@@ -102,6 +102,17 @@ const syncTransactions = async (accessToken, cursor) => {
   };
 };
 
+// Revokes our access to the bank connection at Plaid. Used when a subscriber
+// deletes their account; an item that is already gone counts as removed.
+const removeItem = async (accessToken) => {
+  try {
+    await client.itemRemove({ access_token: accessToken });
+  } catch (err) {
+    const code = err?.response?.data?.error_code;
+    if (code !== "ITEM_NOT_FOUND" && code !== "INVALID_ACCESS_TOKEN") throw err;
+  }
+};
+
 // Plaid signs webhooks with a JWT in the Plaid-Verification header (ES256,
 // verified against a rotating public key Plaid publishes per key id).
 // Caching keys by kid since Plaid asks callers not to re-fetch per request.
@@ -155,5 +166,6 @@ module.exports = {
   createLinkToken,
   exchangePublicToken,
   syncTransactions,
+  removeItem,
   verifyWebhookSignature,
 };
