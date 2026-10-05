@@ -14,6 +14,8 @@ const deletedAccountSummarySchema = new Schema(
     loginCount: { type: Number, default: 0 },
     tenureDays: { type: Number },
     planName: { type: String },
+    planPrice: { type: Number },
+    cancellationType: { type: String },
     hadActiveSubscription: { type: Boolean },
     hadBankConnection: { type: Boolean },
     bookingsCount: { type: Number, default: 0 },
