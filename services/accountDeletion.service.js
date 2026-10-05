@@ -122,6 +122,26 @@ const deleteAccount = async (userId, { reasonCode } = {}) => {
     );
   }
 
+  // Same idea as the Deactivate flow's pending-bookings rule, but only for
+  // bookings that are still ahead, so an old booking nobody marked complete
+  // can't make deletion impossible.
+  const now = new Date();
+  const upcoming = await Booking.countDocuments({
+    userId,
+    bookingStatus: "Confirmed",
+    $or: [
+      { endDate: { $gte: now } },
+      { endDate: null, startDate: { $gte: now } },
+    ],
+  });
+  if (upcoming > 0) {
+    const plural = upcoming === 1;
+    throw new AccountDeletionError(
+      409,
+      `You have ${upcoming} upcoming confirmed booking${plural ? "" : "s"}. Complete or cancel ${plural ? "it" : "them"} first, then delete your account, so your customers aren't left with appointments that disappear.`
+    );
+  }
+
   const [bookingsCount, customersCount, servicesCount] = await Promise.all([
     Booking.countDocuments({ userId }),
     Customer.countDocuments({ userId }),
