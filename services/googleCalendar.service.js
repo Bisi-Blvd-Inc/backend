@@ -80,6 +80,31 @@ const getAuthorizedClient = async (userId) => {
   return client;
 };
 
+// Used by account deletion: best-effort revoke of the Google grant, then
+// removal of the stored tokens and synced-event records.
+const disconnect = async (userId) => {
+  if (!db) return;
+  const doc = await connectionRef(userId).get();
+  if (doc.exists && isConfigured()) {
+    try {
+      const token = doc.data();
+      const client = loadOAuthClient();
+      await client.revokeToken(
+        decryptSecret(token.refresh_token || token.access_token)
+      );
+    } catch (err) {
+      console.warn("Could not revoke Google grant:", err.message);
+    }
+  }
+  const events = await db
+    .collection("users")
+    .doc(String(userId))
+    .collection("calendarEvents")
+    .get();
+  await Promise.all(events.docs.map((d) => d.ref.delete()));
+  await connectionRef(userId).delete();
+};
+
 module.exports = {
   isConfigured,
   loadOAuthClient,
@@ -87,4 +112,5 @@ module.exports = {
   verifyState,
   saveConnection,
   getAuthorizedClient,
+  disconnect,
 };
