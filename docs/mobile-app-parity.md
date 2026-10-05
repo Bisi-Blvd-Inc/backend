@@ -8,7 +8,7 @@ new section whenever a feature ships or is staged on the web/backend.**
 Status key: **Prod** = live on production. **Staging** = on `stage` only.
 **Planned** = decided, not built anywhere yet.
 
-Last updated: 2026-09-24.
+Last updated: 2026-10-05.
 
 ---
 
@@ -208,6 +208,32 @@ folder of its own to check against these features.
   only lets an owner generate/customize/copy the link, it never renders the
   customer-facing booking form itself. Whoever receives the link always
   opens it in a browser (the web frontend), on any platform.
+
+---
+
+## 3b. Account deletion and new pricing (2026-10-05)
+
+- **Account deletion (App Store guideline 5.1.1(v)) — Staged.** New endpoint
+  `POST frontend/user/delete-account` (body: `password`, optional `reason`
+  of `too_expensive | not_using | missing_features | switching | privacy |
+  other`). Permanently deletes the signed-in account and its data, cancels
+  Stripe billing, removes Plaid items and the Google Calendar grant, and
+  keeps only an anonymous summary. Returns `409` with a message for an
+  enterprise admin who still has licensed members. The Professional app's
+  Account screen previously had a Deactivate Account button that did nothing;
+  it now opens a Delete Account dialog (`professional/lib/src/screens/
+  account.dart`, `core` service + repository). Apple rejected build 1.0 (17)
+  on 2026-10-05 for lacking this. The Client app, if it ever supports account
+  creation, needs the same screen.
+- **New pricing — Staged (web).** Standard $59/mo and Upgrade $79/mo (coming
+  soon). The Flutter pricing screen (`professional/lib/src/blocs/pricing/`)
+  lists plans from Stripe by product name and only recognizes
+  "Monthly Membership", "Quarterly" and "Annual" names. The new Stripe
+  products have different names, so they will **not appear in the app**, and
+  the old "Monthly Membership" product would still show $35 until its price
+  is archived. Decide how the app should present plans (and note Apple's
+  in-app purchase rules for selling subscriptions inside an iOS app) before
+  the iOS launch is promoted.
 
 ---
 
