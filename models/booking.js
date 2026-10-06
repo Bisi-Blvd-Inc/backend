@@ -76,6 +76,7 @@ var BookingSchema = new Schema(
     bookingFor: { type: Schema.Types.ObjectId, ref: "Customer" },
     scheduleexist: { type: Boolean, default: false },
     googleEventId: { type: String },
+    outlookEventId: { type: String },
   },
   {
     timestamps: { createdAt: true, updatedAt: true },
@@ -83,7 +84,7 @@ var BookingSchema = new Schema(
 );
 BookingSchema.index({ location: "2dsphere" });
 
-// Mirror bookings to the subscriber's connected Google Calendar. Every create
+// Mirror bookings to the subscriber's connected Google and Outlook calendars. Every create
 // and update in the app goes through Booking.create / findByIdAndUpdate, so
 // hooking here covers the owner's calendar and client booking links alike.
 // These run in the background and swallow their own errors — a calendar
@@ -110,11 +111,15 @@ BookingSchema.pre("deleteOne", { document: false, query: true }, async function 
   try {
     const existing = await this.model
       .findOne(this.getFilter())
-      .select("userId googleEventId")
+      .select("userId googleEventId outlookEventId")
       .lean();
     this._calendarEventToRemove =
-      existing && existing.googleEventId
-        ? { userId: existing.userId, googleEventId: existing.googleEventId }
+      existing && (existing.googleEventId || existing.outlookEventId)
+        ? {
+            userId: existing.userId,
+            googleEventId: existing.googleEventId,
+            outlookEventId: existing.outlookEventId,
+          }
         : null;
   } catch (err) {
     this._calendarEventToRemove = null;
@@ -137,11 +142,15 @@ BookingSchema.pre("deleteMany", { document: false, query: true }, async function
   try {
     const existing = await this.model
       .find(this.getFilter())
-      .select("userId googleEventId")
+      .select("userId googleEventId outlookEventId")
       .lean();
     this._calendarEventsToRemove = existing
-      .filter((b) => b.googleEventId)
-      .map((b) => ({ userId: b.userId, googleEventId: b.googleEventId }));
+      .filter((b) => b.googleEventId || b.outlookEventId)
+      .map((b) => ({
+        userId: b.userId,
+        googleEventId: b.googleEventId,
+        outlookEventId: b.outlookEventId,
+      }));
   } catch (err) {
     this._calendarEventsToRemove = [];
   }
