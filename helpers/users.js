@@ -61,7 +61,7 @@ const sendWrongPasswordMail = async (email) => {
 const sendActivationMail = async (email) => {
   try {
     const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
-      expiresIn: "5m",
+      expiresIn: "24h",
     });
     const emailData = {
       email,
@@ -100,7 +100,7 @@ const sendEnterpriseActivationCode = async (email, code) => {
 const returnAccountActivationMail = async (email) => {
   try {
     const token = jwt.sign({ email }, process.env.JWT_ACCOUNT_ACTIVATION, {
-      expiresIn: "5m",
+      expiresIn: "24h",
     });
     const emailData = {
       email,

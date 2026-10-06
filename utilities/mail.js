@@ -31,6 +31,7 @@ module.exports.sendMailerHtml = async (data) => {
     subject: data.subject,
     html: data.html,
   };
+  if (data.attachments && data.attachments.length) msg.attachments = data.attachments;
 
   try {
     await sgMail.send(msg);

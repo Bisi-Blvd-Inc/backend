@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
+const fs = require("fs");
 const mail = require("../utilities/mail");
 require("dotenv").config();
 
@@ -56,34 +56,23 @@ const comparePassword = async (password, enteredPassword) => {
   return false;
 };
 
-const transporter = nodemailer.createTransport({
-  TLS: true,
-  port: 587,
-  host: process.env.MAILER_HOST,
-  auth: {
-    user: process.env.MAILER_EMAIL,
-    pass: process.env.MAILER_PASSWORD,
-  },
-});
-
+// Admin-console emails. These used to log in to a separate mailbox over SMTP
+// (MAILER_HOST / MAILER_EMAIL / MAILER_PASSWORD); they now go through SendGrid
+// like every other email, from SMTP_FROM_EMAIL. Failures are logged, not
+// thrown, matching how they behaved before.
 const sendForgotPasswordMail = async (values) => {
   const { token, email } = values;
-  let mailOptions = {
-    from: process.env.MAILER_EMAIL,
-    to: email,
-    subject: "Forgot Password",
-    text: "Node.js testing mail for GeeksforGeeks",
-    html: ` <a>please Click here  to reset your password</a>
+  try {
+    await mail.sendMailerHtml({
+      email,
+      subject: "Forgot Password",
+      html: ` <a>please Click here  to reset your password</a>
     <a href = ${process.env.CLIENT_URL}/resetPassword/${token}>Click Here</a>
     `,
-  };
-
-  transporter.sendMail(mailOptions, (error, result) => {
-    if (result) {
-    } else {
-      console.log("That's error!", error);
-    }
-  });
+    });
+  } catch (error) {
+    console.log("Admin forgot-password email failed:", error.message);
+  }
 };
 
 const sendForgotPasswordMailForFrontend = async (values) => {
@@ -129,31 +118,32 @@ const sendForgotPasswordMailForBookingClient = async (values) => {
 };
 
 const sendMailForUser = async (values) => {
-  const { token, email, password } = values;
-  let mailOptions = {
-    from: process.env.MAILER_EMAIL,
-    to: email,
-    subject: "Login Details",
-    text: "Node.js testing mail for GeeksforGeeks CLICK HERE TO LOGIN",
-    html: `<a></a>
+  const { email, password } = values;
+  const attachments = [];
+  try {
+    attachments.push({
+      content: fs.readFileSync("./personal Budget Performa.csv").toString("base64"),
+      filename: "personal Budget Performa.csv",
+      type: "text/csv",
+      disposition: "attachment",
+    });
+  } catch (error) {
+    console.log("Login-details email: budget template not attached:", error.message);
+  }
+  try {
+    await mail.sendMailerHtml({
+      email,
+      subject: "Login Details",
+      html: `<a></a>
     <p>Email: ${email} </p>
     <p>Password: ${password}</p>
     <a href = ${process.env.FRONT_BASE_URL}>Please click here to login</a>
     `,
-    attachments: [
-      {
-        filename: "personal Budget Performa.csv",
-        path: "./personal Budget Performa.csv",
-      },
-    ],
-  };
-
-  transporter.sendMail(mailOptions, (error, result) => {
-    if (result) {
-    } else {
-      console.log(error);
-    }
-  });
+      attachments,
+    });
+  } catch (error) {
+    console.log("Login-details email failed:", error.message);
+  }
 };
 
 const getToken = (req)  => {
