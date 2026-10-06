@@ -9,6 +9,7 @@ router.post("/retrieveInvoice", userController.retrieveInvoice);
 router.post("/create", authMiddleware, userController.createUser);
 router.post("/restoreHistory", authMiddleware, userController.restoreHistory);
 router.post("/Deletedhistory", authMiddleware, userController.deleteHistory);
+router.post("/delete-account", authMiddleware, userController.deleteMyAccount);
 
 
 router.post("/createBooking",  userController.createExternalBooking);

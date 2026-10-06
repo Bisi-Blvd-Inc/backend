@@ -180,6 +180,24 @@ const sendReturnuser = async (firstName, resultsArray) => {
   }
 };
 
+const accountDeletedMail = async (firstname, email) => {
+  try {
+    const emailData = {
+      email: email,
+      subject: `Your Bisi Books account has been deleted`,
+      html: `
+          <p>Dear ${firstname},</p>
+          <p>Your Bisi Books account and the personal data tied to it have been deleted, and your subscription has been canceled.</p>
+          <p>We keep only the billing records we are required by law to keep, and anonymous usage totals that cannot be traced back to you.</p>
+          <p>If this wasn't you, reply to this email right away.</p>
+      `,
+    };
+    return owner.sendOwnerMailer(emailData);
+  } catch (error) {
+    throw error;
+  }
+};
+
 const accountDeactivationMail = async (firstname, email) => {
   try {
     const emailData = {
@@ -989,6 +1007,7 @@ module.exports = {
   sendBookingMailExternal,
   sendstaffMail,
   accountDeactivationMail,
+  accountDeletedMail,
   accountactivationMail,
   accountactivationMailToOwner,
   accountDeactivationMailToOwner,
