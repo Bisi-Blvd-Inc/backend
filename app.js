@@ -11,6 +11,7 @@ const { smtpSms } = require("./helpers/twilio");
 const moment = require("moment");
 const stripe = require("stripe")(process.env.STRIPE_SK_KEY);
 const googleCalendarRoutes = require("./routes/googleCalendarRoutes");
+const microsoftCalendarRoutes = require("./routes/microsoftCalendarRoutes");
 const bankController = require("./controllers/frontend/bank.controller");
 const userController = require("./controllers/frontend/user.controller");
 const bankSyncService = require("./services/bankSync.service");
@@ -235,6 +236,7 @@ app.use("/admin", require("./routes/admin/index"));
 app.use("/frontend", require("./routes/frontend/index"));
 app.use(express.json());
 app.use("/api/google-calendar", googleCalendarRoutes);
+app.use("/api/microsoft-calendar", microsoftCalendarRoutes);
 
 app.use((err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
