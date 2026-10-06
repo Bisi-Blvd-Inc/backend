@@ -78,6 +78,15 @@ const signin = async (req, res) => {
       };
 
       let updatedUser = await authService.update(userId, { fcmToken: array });
+      // Nothing recorded actual login history before this — record it here,
+      // after credentials are confirmed valid, so a failed attempt never
+      // counts as a login.
+      authService
+        .update(userId, {
+          $set: { lastLoginAt: new Date() },
+          $inc: { loginCount: 1 },
+        })
+        .catch((err) => console.error("Could not record lastLoginAt:", err.message));
       if (user?.status == 0 && user?.HistoryActivateStatus == false) {
         returnAccountActivationMail(user?.email);
         sendReturnuser(user?.firstName, resultsArray)
@@ -104,6 +113,15 @@ const signin = async (req, res) => {
   }
 };
 
+
+// The signup response used to include the whole user record, password hash
+// included (and, for a pending account being re-signed-up, someone else's).
+const withoutPassword = (user) => {
+  if (!user) return user;
+  const plain = typeof user.toObject === "function" ? user.toObject() : { ...user };
+  delete plain.password;
+  return plain;
+};
 
 const signup = async (req, res) => {
   try {
@@ -135,7 +153,7 @@ const signup = async (req, res) => {
         return res.status(201).json({
           success: true,
           message: "You already have an account, Please verify email!",
-          data: user,
+          data: withoutPassword(user),
         });
       }
       if (user?.status == 0 && user?.HistoryActivateStatus == true) {
@@ -143,7 +161,7 @@ const signup = async (req, res) => {
         return res.status(201).json({
           success: true,
           message: "You already have an account pending verification. We've resent your activation email.",
-          data: user,
+          data: withoutPassword(user),
         });
       }
       return res.status(403).json({
@@ -180,11 +198,20 @@ const signup = async (req, res) => {
 
           //await createAdminNotification(notification);
           await emailSettingService.create({ description1: "", description2: "", endsWith: "", addedBy: createdUser._id })
+          // New accounts go straight to the payment step, before they have
+          // activated or logged in, so hand back a short-lived token for
+          // just that. Not issued in the "account already exists" branches
+          // above, so retrying signup with someone else's email gets nothing.
+          const checkoutToken = await generateToken(
+            createdUser,
+            Math.floor(Date.now() / 1000) + 2 * 60 * 60
+          );
           return res.status(201).json({
             success: true,
             message: "Registered successfully, Please verify email!",
-            data: createdUser,
-            createdUserFromDB: createdUserFromDB
+            data: withoutPassword(createdUser),
+            createdUserFromDB: withoutPassword(createdUserFromDB),
+            token: checkoutToken,
           });
         } catch (error) {
           return res.status(500).json({
@@ -210,7 +237,7 @@ const signup = async (req, res) => {
       return res.status(201).json({
         success: true,
         message: "Staff add successfully.. ",
-        data: createdUser,
+        data: withoutPassword(createdUser),
       });
     }
 

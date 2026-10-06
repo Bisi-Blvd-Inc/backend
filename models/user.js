@@ -39,6 +39,12 @@ var userSchema = new Schema(
     isDeleted: { type: Boolean, default: false },
     addedBy: { type: Schema.Types.ObjectId },
     loginStatus: { type: Number, enum: [0, 1], default: 0 },
+    // loginStatus only reflects the current session; this is the actual
+    // history — when did they last successfully sign in, and how many
+    // times. Nothing recorded this before 2026-09-28, so it's empty for
+    // every account's past logins.
+    lastLoginAt: { type: Date },
+    loginCount: { type: Number, default: 0 },
     cardDetails: { type: Object },
     planDeatils: { type: Object },
     subscriptionStatus: { type: Boolean, default: false },
