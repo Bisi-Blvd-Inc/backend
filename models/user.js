@@ -75,6 +75,10 @@ var userSchema = new Schema(
     // period, see checkAllUsersWithDeactivate in app.js). Added
     // 2026-09-30 to stop reusing isActivateAccount for this.
     isAccountDeactivated: { type: Boolean, default: false },
+    // Id of the newest login. Only a token carrying this id is accepted, so
+    // logging in anywhere ends every other session (see middlewares/
+    // frontend/authMiddleware.js). select:false keeps it out of API responses.
+    activeSessionId: { type: String, select: false },
     // Set when a renewal payment fails (Stripe invoice.payment_failed):
     // access is blocked immediately (paymentStatus set to 0), and this is
     // the date the 15-day cure window closes. If payment still hasn't

@@ -6,6 +6,7 @@ const _ = require("lodash");
 const { pick } = require("lodash");
 const { createAdminNotification } = require("./notification.controller");
 const { generateToken, comparePassword, verifyJWT, sendForgotPasswordMailForBookingClient} = require("../../helpers/helper");
+const { issueSession } = require("../../helpers/session");
 const bcrypt = require("bcrypt");
 const { sendForgotPasswordMailForFrontend } = require("../../helpers/helper");
 const { sendActivationMail, returnAccountActivationMail, sendReturnuser, activateAccount, sendWrongPasswordMail, accountactivationMailToOwner, accountDeactivationMailToOwner, sendNewuserCreated, accountDeactivationMail, accountactivationMail } = require("../../helpers/users");
@@ -57,7 +58,7 @@ const signin = async (req, res) => {
           status: 403,
         });
       }
-      const token = await generateToken(user);
+      const token = await issueSession(user);
       if (!token) {
         return res.status(206).json({
           message: "Error in generating token",
@@ -202,7 +203,7 @@ const signup = async (req, res) => {
           // activated or logged in, so hand back a short-lived token for
           // just that. Not issued in the "account already exists" branches
           // above, so retrying signup with someone else's email gets nothing.
-          const checkoutToken = await generateToken(
+          const checkoutToken = await issueSession(
             createdUser,
             Math.floor(Date.now() / 1000) + 2 * 60 * 60
           );
@@ -515,7 +516,7 @@ const autoSignIn = async (req, res) => {
         });
       }
 
-      const token = await generateToken(user);
+      const token = await issueSession(user);
       if (!token) {
         return res.status(206).json({
           message: "Error in generating token",

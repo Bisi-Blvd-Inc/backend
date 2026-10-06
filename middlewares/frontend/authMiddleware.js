@@ -30,7 +30,23 @@ exports.authMiddleware = async (req, res, next) => {
     // here first would just break the dashboard with no way out, worse
     // than today's gap. Wire it in once that screen exists (see
     // subscription-access-lifecycle, Phase 4).
-    const user = await User.findById(userId).select("isAccountDeactivated");
+    const user = await User.findById(userId).select(
+      "isAccountDeactivated +activeSessionId"
+    );
+    // One active login per account: a token is only good while its session id
+    // is the account's newest. Tokens with no session id (old logins, password
+    // reset links) and tokens for deleted accounts are refused too. 401 with a
+    // code so the apps can tell "signed in elsewhere" from other failures.
+    if (!user || !decoded.sid || decoded.sid !== user.activeSessionId) {
+      const replaced = !!user && !!decoded.sid && !!user.activeSessionId;
+      return res.status(401).json({
+        success: false,
+        code: replaced ? "SESSION_REPLACED" : "SESSION_INVALID",
+        message: replaced
+          ? "You were signed out because your account was used to sign in somewhere else."
+          : "Please log in again.",
+      });
+    }
     if (user?.isAccountDeactivated === true) {
       return res.status(403).json({
         success: false,

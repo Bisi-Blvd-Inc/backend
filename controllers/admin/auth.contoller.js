@@ -1,6 +1,7 @@
 const authService = require("../../services/auth.services");
 const _ = require("lodash");
 const {generateToken, comparePassword, verifyJWT} = require("../../helpers/helper");
+const {issueSession} = require("../../helpers/session");
 const bcrypt = require("bcrypt");
 const {pick} = require("lodash");
 const {sendForgotPasswordMail} = require("../../helpers/helper");
@@ -17,7 +18,7 @@ const signin = async (req, res) => {
             if (user.role !== 1) {
                 return res.status(203).send({message: "Access denied!", status: 403});
             }
-            const token = await generateToken(user);
+            const token = await issueSession(user);
             if (!token) {
                 return res.status(206).json({message: "Error in generating token"});
             }
@@ -41,7 +42,7 @@ const signinadmin = async (req, res) => {
             if (!validUser) {
                 return res.status(203).json({message: "Invalid username/password"});
             }
-            const token = await generateToken(user);
+            const token = await issueSession(user);
             if (!token) {
                 return res.status(206).json({message: "Error in generating token"});
             }
