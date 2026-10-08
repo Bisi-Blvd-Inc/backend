@@ -24,6 +24,7 @@ const RejectImports = require("../models/rejectImports");
 const Enterprise = require("../models/enterprise");
 const DeletedAccountSummary = require("../models/deletedAccountSummary");
 const googleCalendar = require("./googleCalendar.service");
+const microsoftCalendar = require("./microsoftCalendar.service");
 const { decryptSecret } = require("../helpers/paymentCrypto");
 
 // The bank-connection code only exists on `stage` until Plaid's live-tier
@@ -182,6 +183,9 @@ const deleteAccount = async (userId, { reasonCode } = {}) => {
   const hadBankConnection = await removeBankConnections(userId);
   await googleCalendar.disconnect(userId).catch((err) => {
     console.warn("Calendar disconnect during account deletion failed:", err.message);
+  });
+  await microsoftCalendar.disconnect(userId).catch((err) => {
+    console.warn("Outlook disconnect during account deletion failed:", err.message);
   });
 
   const staffUsers = await User.find({ addedBy: userId, role: 3 }).select("_id");

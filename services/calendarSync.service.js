@@ -143,42 +143,66 @@ const removeEventForDeletedBooking = async ({ userId, googleEventId }, deps = {}
 };
 
 // Fire-and-forget wrappers used by the booking model hooks: a calendar
-// problem must never fail or slow down saving a booking.
+// problem must never fail or slow down saving a booking. Google and Outlook
+// run independently, so one provider failing never affects the other.
 // Owners with no connected calendar are the norm, so that outcome is logged
 // once per owner per process instead of on every booking.
 const loggedNotConnected = new Set();
 
-const syncBookingInBackground = (bookingId) => {
-  if (!process.env.GOOGLE_CREDENTIALS_PATH) {
-    console.warn("Google Calendar sync skipped: GOOGLE_CREDENTIALS_PATH is not set");
-    return;
+const logResult = (provider, label, result) => {
+  if (String(result).startsWith("not-connected")) {
+    const key = `${provider}:${result}`;
+    if (loggedNotConnected.has(key)) return;
+    loggedNotConnected.add(key);
   }
-  setImmediate(() => {
-    syncBooking(bookingId)
-      .then((result) => {
-        if (String(result).startsWith("not-connected")) {
-          if (loggedNotConnected.has(result)) return;
-          loggedNotConnected.add(result);
-        }
-        console.log(`Google Calendar sync for booking ${bookingId}: ${result}`);
-      })
-      .catch((err) =>
-        console.error(`Google Calendar sync failed for booking ${bookingId}:`, err.message)
-      );
-  });
+  console.log(`${provider} sync for ${label}: ${result}`);
+};
+
+const syncBookingInBackground = (bookingId) => {
+  if (process.env.GOOGLE_CREDENTIALS_PATH) {
+    setImmediate(() => {
+      syncBooking(bookingId)
+        .then((result) => logResult("Google Calendar", `booking ${bookingId}`, result))
+        .catch((err) =>
+          console.error(`Google Calendar sync failed for booking ${bookingId}:`, err.message)
+        );
+    });
+  } else {
+    console.warn("Google Calendar sync skipped: GOOGLE_CREDENTIALS_PATH is not set");
+  }
+
+  if (process.env.MICROSOFT_CLIENT_ID) {
+    setImmediate(() => {
+      require("./outlookCalendarSync.service")
+        .syncBooking(bookingId)
+        .then((result) => logResult("Outlook Calendar", `booking ${bookingId}`, result))
+        .catch((err) =>
+          console.error(`Outlook Calendar sync failed for booking ${bookingId}:`, err.message)
+        );
+    });
+  }
 };
 
 const removeEventInBackground = (info) => {
-  if (!process.env.GOOGLE_CREDENTIALS_PATH) return;
-  setImmediate(() => {
-    removeEventForDeletedBooking(info)
-      .then((result) =>
-        console.log(`Google Calendar event ${info.googleEventId} for deleted booking: ${result}`)
-      )
-      .catch((err) =>
-        console.error("Google Calendar event removal failed:", err.message)
-      );
-  });
+  if (process.env.GOOGLE_CREDENTIALS_PATH && info.googleEventId) {
+    setImmediate(() => {
+      removeEventForDeletedBooking(info)
+        .then((result) =>
+          console.log(`Google Calendar event ${info.googleEventId} for deleted booking: ${result}`)
+        )
+        .catch((err) => console.error("Google Calendar event removal failed:", err.message));
+    });
+  }
+  if (process.env.MICROSOFT_CLIENT_ID && info.outlookEventId) {
+    setImmediate(() => {
+      require("./outlookCalendarSync.service")
+        .removeEventForDeletedBooking(info)
+        .then((result) =>
+          console.log(`Outlook event ${info.outlookEventId} for deleted booking: ${result}`)
+        )
+        .catch((err) => console.error("Outlook Calendar event removal failed:", err.message));
+    });
+  }
 };
 
 module.exports = {
