@@ -54,6 +54,11 @@ folder of its own to check against these features.
   does not use that endpoint).
 - **Automatically benefits:** bookings created in the app (`/frontend/booking/create`)
   now push to a connected Google Calendar server-side, no app change needed.
+  The same applies to Outlook: a booking made in either app is pushed to the
+  owner's connected Outlook calendar (checked 2026-10-06: neither Flutter app
+  has any calendar-connect screen, so connecting is web-only for now).
+  Endpoints if an app screen is added later: `GET /api/microsoft-calendar/auth-url`
+  (returns the Microsoft sign-in URL), `GET /status`, `DELETE /disconnect`.
 
 ---
 
